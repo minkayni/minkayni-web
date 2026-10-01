@@ -117,7 +117,7 @@ for (const l of A['TEXTO'].layers.filter(l => /^n( 2)?$/.test(l.nm))) {
 }
 
 // ---- 5b. CC Bend It -> keyframes de trazado --------------------------------
-const { evalProp, layerMatrix, mul, bakeBends } = require('./bend.cjs');
+const { evalProp, layerMatrix, mul, bakeBends, rigBody } = require('./bend.cjs');
 const bendParams = fx => {
   const P = Object.fromEntries(fx.ef.map(p => [p.mn, p.v]));
   return f => ({
@@ -130,6 +130,7 @@ const bendParams = fx => {
 const isoLayers = A['ISOTIPO'].layers, animLayers = A['isotipo animado'].layers;
 const bodyPrecomp = animLayers[0];                       // 'cuerpo L 2' con su propio Bend It
 const body1 = A['cuerpo L 2'].layers[0];
+rigBody(body1.shapes.find(g => g.nm === 'Forma 1').it.find(s => s.ty === 'sh'), 48);
 const body2Layer = isoLayers.find(l => l.refId === 'cuerpo l 2 Comp. 1');
 const isoL2 = isoLayers.find(l => l.refId === 'isotipo animado');
 const innerBend = { params: bendParams(bodyPrecomp.ef[0]), toSpace: f => layerMatrix(body1, A['cuerpo L 2'].layers, f) };

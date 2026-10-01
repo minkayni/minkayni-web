@@ -74,15 +74,6 @@ function bendPoint(pt, start, end, bend, prestart) {
 }
 
 // ---- trazados --------------------------------------------------------------
-function ellipseToShape(el) {
-  const s = el.s.k, p = el.p.k, rx = s[0] / 2, ry = s[1] / 2, kx = rx * 0.5523, ky = ry * 0.5523;
-  return {
-    c: true,
-    v: [[p[0], p[1] - ry], [p[0] + rx, p[1]], [p[0], p[1] + ry], [p[0] - rx, p[1]]],
-    i: [[-kx, 0], [0, -ky], [kx, 0], [0, ky]],
-    o: [[kx, 0], [0, ky], [-kx, 0], [0, -ky]],
-  };
-}
 // cada tramo se parte en dos cúbicas para que una recta pueda curvarse
 function toSegments(sh) {
   const n = sh.v.length, segs = [], count = sh.c ? n : n - 1;
@@ -109,14 +100,43 @@ function fromSegments(segs, closed) {
     const s = segs[segs.length - 1];
     v.push(s[3]); i.push([s[2][0] - s[3][0], s[2][1] - s[3][1]]); o.push([0, 0]);
   }
-  const r = pts => pts.map(p => [+p[0].toFixed(3), +p[1].toFixed(3)]);
+  const r = pts => pts.map(p => [+p[0].toFixed(2), +p[1].toFixed(2)]);
   return { c: closed, v: r(v), i: r(i), o: r(o) };
 }
+
+/* Los extremos de cada tramo se doblan como puntos, pero los tiradores son
+   direcciones: van con la derivada de la flexión en su extremo. Doblarlos como
+   puntos sueltos quebraba la tangente en cada unión (codos falsos de ~10°). */
+function bendTransform(bends, G, f) {
+  const steps = bends.map(b => ({ P: b.params(f), M: mul(b.toSpace(f), G) }))
+    .filter(s => Math.abs(s.P.bend) >= 1e-4)
+    .map(s => ({ ...s, Mi: inv(s.M) }));
+  const T = p => steps.reduce((q, { P, M, Mi }) => apply(Mi, bendPoint(apply(M, q), P.start, P.end, P.bend, P.prestart)), p);
+  const dT = (p, v) => {
+    const len = Math.hypot(v[0], v[1]);
+    if (len < 1e-9) return [0, 0];
+    const e = 0.25, u = [v[0] / len * e, v[1] / len * e];
+    const a = T([p[0] + u[0], p[1] + u[1]]), b = T([p[0] - u[0], p[1] - u[1]]);
+    return [(a[0] - b[0]) / (2 * e) * len, (a[1] - b[1]) / (2 * e) * len];
+  };
+  const seg = ([p0, p1, p2, p3]) => {
+    const q0 = T(p0), q3 = T(p3);
+    const h1 = dT(p0, [p1[0] - p0[0], p1[1] - p0[1]]), h2 = dT(p3, [p2[0] - p3[0], p2[1] - p3[1]]);
+    return [q0, [q0[0] + h1[0], q0[1] + h1[1]], [q3[0] + h2[0], q3[1] + h2[1]], q3];
+  };
+  return { T, seg };
+}
+
+const TIME_TOL = 4;     // px en el espacio de la forma que se toleran entre dos claves interpoladas
+const MIN_STEP = 0.125; // fotogramas
 
 /**
  * Hornea en la capa de formas `layer` las flexiones `bends` para los fotogramas [from, to].
  * Cada flexión: { toSpace(f) -> matriz del espacio de la capa de formas al espacio del efecto,
  *                 params(f) -> {start, end, bend, prestart} }
+ * El reproductor pinta a 60 fps e interpola en línea recta entre claves; donde
+ * la forma cambia rápido se añaden claves intermedias hasta que esa recta no se
+ * aparta más de TIME_TOL de la forma real.
  */
 function bakeBends(layer, bends, from, to) {
   for (const group of layer.shapes.filter(s => s.ty === 'gr')) {
@@ -124,25 +144,76 @@ function bakeBends(layer, bends, from, to) {
     const G = trsMatrix(tr, 0);
     group.it.forEach((item, idx) => {
       if (item.ty !== 'sh' && item.ty !== 'el') return;
-      const source = item.ty === 'el' ? { a: 0, k: ellipseToShape(item) } : item.ks;
+      /* La cabeza es un círculo pequeño frente al radio de la flexión: se
+         desplaza con ella sin deformarse, así que basta animar su centro. */
+      const isHead = item.ty === 'el';
+      const pts = s => (isHead ? [s] : s.v);
+      const at = isHead
+        ? f => bendTransform(bends, G, f).T(item.p.k).map(n => +n.toFixed(2))
+        : f => {
+          const shape = evalProp(item.ks, f);
+          return fromSegments(toSegments(shape).map(bendTransform(bends, G, f).seg), shape.c);
+        };
+      const gap = (a, b, m) => Math.max(...pts(m).map((p, i) => Math.hypot(p[0] - (pts(a)[i][0] + pts(b)[i][0]) / 2, p[1] - (pts(a)[i][1] + pts(b)[i][1]) / 2)));
+      const key = (t, s) => (isHead ? { t, s, i: { x: 1, y: 1 }, o: { x: 0, y: 0 } } : { t, s: [s], i: { x: 1, y: 1 }, o: { x: 0, y: 0 } });
       const keys = [];
-      for (let f = from; f <= to; f++) {
-        const shape = evalProp(source, f);
-        let segs = toSegments(shape);
-        for (const b of bends) {
-          const P = b.params(f);
-          if (Math.abs(P.bend) < 1e-4) continue;
-          const M = mul(b.toSpace(f), G), Mi = inv(M);
-          segs = segs.map(s => s.map(p => apply(Mi, bendPoint(apply(M, p), P.start, P.end, P.bend, P.prestart))));
+      const refine = (t0, s0, t1, s1) => {
+        const tm = (t0 + t1) / 2, sm = at(tm);
+        if (t1 - t0 > MIN_STEP && gap(s0, s1, sm) > TIME_TOL) {
+          refine(t0, s0, tm, sm); keys.push(key(tm, sm)); refine(tm, sm, t1, s1);
         }
-        keys.push({ t: f, s: [fromSegments(segs, shape.c)], i: { x: 1, y: 1 }, o: { x: 0, y: 0 } });
+      };
+      let prev = at(from);
+      keys.push(key(from, prev));
+      for (let f = from + 1; f <= to; f++) {
+        const cur = at(f);
+        refine(f - 1, prev, f, cur);
+        keys.push(key(f, cur));
+        prev = cur;
       }
       // colapsa los tramos sin cambio para no inflar el archivo
       const slim = keys.filter((k, n) => n === 0 || n === keys.length - 1 ||
         JSON.stringify(k.s) !== JSON.stringify(keys[n - 1].s) || JSON.stringify(k.s) !== JSON.stringify(keys[n + 1].s));
-      group.it[idx] = { ty: 'sh', ind: item.ind || 0, ix: item.ix || 1, nm: item.nm, mn: item.mn, hd: false, ks: { a: 1, k: slim } };
+      group.it[idx] = isHead
+        ? Object.assign(item, { p: { a: 1, k: slim } })
+        : { ty: 'sh', ind: item.ind || 0, ix: item.ix || 1, nm: item.nm, mn: item.mn, hd: false, ks: { a: 1, k: slim } };
     });
   }
 }
 
-module.exports = { evalProp, layerMatrix, mul, bakeBends };
+// ---- la figura como esqueleto ----------------------------------------------
+/* AE interpola cada vértice del trazado en línea recta. Entre dos poses muy
+   distintas (la voltereta gira piernas y brazos más de 90° en dos fotogramas)
+   eso acorta las extremidades a la mitad, y en AE lo tapaba el desenfoque de
+   movimiento, que Lottie no tiene. Aquí el trazado se lee como dos cadenas que
+   parten del hombro (cadera→rodilla→pie y codo→mano) y se interpola el ángulo
+   y el largo de cada hueso, con la misma curva de velocidad de cada keyframe. */
+const CHAINS = [[3, 2, 1, 0], [3, 4, 5]]; // índices de vértice: pie 0 … hombro 3 … mano 5
+const wrap = a => Math.atan2(Math.sin(a), Math.cos(a));
+function rigBody(item, until) {
+  const ks = item.ks.k, out = [];
+  for (let n = 0; n < ks.length - 1 && ks[n].t < until; n++) {
+    const k0 = ks[n], k1 = ks[n + 1], A0 = k0.s[0], B0 = k1.s[0];
+    // muestreo fino: bakeBends lo lee también entre fotogramas
+    for (let f = Math.ceil(k0.t / MIN_STEP) * MIN_STEP; f < k1.t && f < until; f += MIN_STEP) {
+      const lin = (f - k0.t) / (k1.t - k0.t);
+      const p = k0.h ? 0 : cubicBezierEase(first(k0.o.x), first(k0.o.y), first(k0.i.x), first(k0.i.y), lin);
+      const v = A0.v.map(() => null);
+      v[3] = [lerp(A0.v[3][0], B0.v[3][0], p), lerp(A0.v[3][1], B0.v[3][1], p)];
+      for (const chain of CHAINS) {
+        for (let j = 1; j < chain.length; j++) {
+          const a = chain[j - 1], b = chain[j];
+          const d0 = [A0.v[b][0] - A0.v[a][0], A0.v[b][1] - A0.v[a][1]], d1 = [B0.v[b][0] - B0.v[a][0], B0.v[b][1] - B0.v[a][1]];
+          const r0 = Math.atan2(d0[1], d0[0]), r = r0 + wrap(Math.atan2(d1[1], d1[0]) - r0) * p;
+          const len = lerp(Math.hypot(...d0), Math.hypot(...d1), p);
+          v[b] = [v[a][0] + Math.cos(r) * len, v[a][1] + Math.sin(r) * len];
+        }
+      }
+      const mix = (P, Q) => P.map((pt, i) => [lerp(pt[0], Q[i][0], p), lerp(pt[1], Q[i][1], p)]);
+      out.push({ t: f, s: [{ c: A0.c, v, i: mix(A0.i, B0.i), o: mix(A0.o, B0.o) }], i: { x: 1, y: 1 }, o: { x: 0, y: 0 } });
+    }
+  }
+  item.ks.k = out.concat(ks.filter(k => k.t >= until));
+}
+
+module.exports = { evalProp, layerMatrix, mul, bakeBends, rigBody };
