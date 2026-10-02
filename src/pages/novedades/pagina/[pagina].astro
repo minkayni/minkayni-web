@@ -1,0 +1,22 @@
+---
+/* Páginas 2…n de /novedades. La primera es /novedades; la versión inglesa,
+   /en/news/page/<n>. Ver la paginación en src/utils/novedades.ts. */
+import PageLayout from "../../../layouts/PageLayout.astro";
+import Novedades from "../../../components/Novedades.astro";
+import { loadLayoutContent } from "../../../utils/layout-content";
+import { rutasDePaginas, type Novedad } from "../../../utils/novedades";
+import { getLocale, useTranslations } from "../../../i18n";
+
+export async function getStaticPaths() {
+    return rutasDePaginas("es");
+}
+
+const { novedades, pagina } = Astro.props as { novedades: Novedad[]; pagina: number };
+const locale = getLocale(Astro.url);
+const t = useTranslations(locale);
+const { footer, site } = await loadLayoutContent(locale);
+---
+
+<PageLayout title={`${t("news.title")}, ${t("news.pageTitle", { page: pagina })}`} description={t("news.metaDescription")}>
+    <Novedades {novedades} {pagina} {locale} socials={footer.Socials} contactEmail={site.contactEmail} />
+</PageLayout>

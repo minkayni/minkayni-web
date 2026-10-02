@@ -33,6 +33,15 @@ const pickMedia = (post: { source?: Media; poster?: Media }) => {
    un presupuesto (tests/ad-grants.test.ts). El archivo completo vive en
    /novedades. Doce bastan para que el carrusel en bucle llene cualquier pantalla. */
 const MAX_POSTS = 12;
+/* El pie se ve recortado a cuatro líneas (`line-clamp-4`, ~180 caracteres) y
+   los pies de Instagram llegan a 1.300 con sus etiquetas: el resto no se ve y
+   solo pesa. El texto completo está en /novedades y en el enlace al original. */
+const MAX_CAPTION = 240;
+const recortar = (texto: string) => {
+    if (texto.length <= MAX_CAPTION) return texto;
+    const corte = texto.lastIndexOf(" ", MAX_CAPTION);
+    return `${texto.slice(0, corte > MAX_CAPTION / 2 ? corte : MAX_CAPTION).trimEnd()}…`;
+};
 const postedAt = (value: unknown) => (typeof value === "string" ? Date.parse(value) || 0 : 0);
 
 const items = posts
@@ -64,7 +73,11 @@ const items = posts
                     return (
                     <div class="post-card group aspect-[1/1] h-full flex-shrink-0 rounded-lg overflow-hidden relative shadow-lg" data-id={post.external_id}>
                         <div class="relative w-full h-full">
-                            {/* Media: fondo (solo el fondo escala en hover del grupo) */}
+                            {/* Media: fondo (solo el fondo escala en hover del grupo).
+                                Con pie de foto, el medio no repite el texto en
+                                `alt`/`aria-label`: el pie de abajo ya lo cuenta,
+                                y repetirlo hacía que un lector de pantalla lo
+                                oyera dos veces (y pesaba en cada tarjeta). */}
                             {video || image ? (
                                 video ? (
                                     <video
@@ -78,8 +91,8 @@ const items = posts
                                         playsinline
                                         disablepictureinpicture
                                         disableRemotePlayback
-                                        aria-label={post.caption || `Reel ${post.external_id}`}
-                                        lang={post.caption ? captionLang : undefined}
+                                        aria-hidden={post.caption ? "true" : undefined}
+                                        aria-label={post.caption ? undefined : `Reel ${post.external_id}`}
                                     />
                                 ) : (
                                     <img
@@ -88,8 +101,7 @@ const items = posts
                                         data-lcp-src={mediaUrl}
                                         data-lcp-srcset={mediaSrcSet || undefined}
                                         sizes="(min-width: 768px) 400px, 200px"
-                                        alt={post.caption || t("news.postFallback", { id: post.external_id ?? "" })}
-                                        lang={post.caption ? captionLang : undefined}
+                                        alt={post.caption ? "" : t("news.postFallback", { id: post.external_id ?? "" })}
                                         width="960"
                                         height="960"
                                         loading="lazy"
@@ -112,7 +124,7 @@ const items = posts
                                 {/* Caption: ocupa 20% height y queda abajo; ellipsis si es largo */}
                                 <div class="absolute left-0 right-0 bottom-0 h-[50%] flex items-end z-20">
                                     <div class="w-full h-fit p-3 bg-gradient-to-t from-black/90 to-transparent">
-                                        <p class="text-base text-white leading-tight overflow-hidden line-clamp-4 m-2" lang={captionLang}>{post.caption}</p>
+                                        <p class="text-base text-white leading-tight overflow-hidden line-clamp-4 m-2" lang={captionLang}>{post.caption ? recortar(post.caption) : post.caption}</p>
                                     </div>
                                 </div>
                             </div>
@@ -125,7 +137,9 @@ const items = posts
     </div>
 </div>
 
-<style>
+{/* Global a propósito: `.post-card` solo existe aquí, y un estilo con ámbito
+    le ponía `data-astro-cid-…` a cada elemento de cada tarjeta. */}
+<style is:global>
     .post-card {
         display: flex;
         align-items: center;

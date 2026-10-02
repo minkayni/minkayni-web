@@ -131,6 +131,11 @@ export const ui = {
         "news.aboutLink.batucada": "Conoce la Batucada Popular",
         "news.previous": "Actividad anterior",
         "news.next": "Actividad siguiente",
+        "news.pagination": "Páginas de publicaciones",
+        "news.pageOf": "Página {page} de {total}",
+        "news.pageTitle": "página {page}",
+        "news.newer": "Más recientes",
+        "news.older": "Anteriores",
         "intro.skip": "Saltar",
 
         /* Vista previa de borradores del constructor (panel de Strapi) */
@@ -413,6 +418,11 @@ export const ui = {
         "news.aboutLink.batucada": "Discover Batucada Popular",
         "news.previous": "Previous activity",
         "news.next": "Next activity",
+        "news.pagination": "Post pages",
+        "news.pageOf": "Page {page} of {total}",
+        "news.pageTitle": "page {page}",
+        "news.newer": "Newer",
+        "news.older": "Older",
         "intro.skip": "Skip",
 
         /* Draft preview (Strapi panel) */

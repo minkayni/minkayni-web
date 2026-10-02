@@ -176,5 +176,27 @@ export async function cargarNovedades(locale: Locale): Promise<Novedad[]> {
         .sort((a, b) => b.fechaIso.localeCompare(a.fechaIso));
 }
 
+/* ── Paginación ──────────────────────────────────────────────────────────
+   /novedades crece con cada publicación sincronizada y cada entrada son unos
+   2 KB de HTML: sin páginas acaba pasando el presupuesto de
+   tests/ad-grants.test.ts. La primera página vive en /novedades (y /en/news);
+   las siguientes en /novedades/pagina/<n> (y /en/news/page/<n>). */
+export const NOVEDADES_POR_PAGINA = 12;
+
+export const totalPaginas = (novedades: Novedad[]): number => Math.max(1, Math.ceil(novedades.length / NOVEDADES_POR_PAGINA));
+
+export const paginaDe = (novedades: Novedad[], pagina: number): Novedad[] =>
+    novedades.slice((pagina - 1) * NOVEDADES_POR_PAGINA, pagina * NOVEDADES_POR_PAGINA);
+
+/** Rutas de las páginas 2…n, para `getStaticPaths`. */
+export async function rutasDePaginas(locale: Locale) {
+    const novedades = await cargarNovedades(locale);
+    const total = totalPaginas(novedades);
+    return Array.from({ length: total - 1 }, (_, i) => ({
+        params: { pagina: String(i + 2) },
+        props: { novedades, pagina: i + 2 },
+    }));
+}
+
 /** La fecha de la novedad más reciente, para fechar la página entera. */
 export const ultimaActualizacion = (novedades: Novedad[]): string | undefined => novedades[0]?.fechaIso;

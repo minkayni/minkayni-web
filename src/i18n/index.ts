@@ -54,6 +54,7 @@ const isLocale = (value: string): value is Locale => (locales as readonly string
 const TRANSLATED_PATHS: Record<string, Partial<Record<Locale, string>>> = {
     "/transparencia": { en: "/transparency" },
     "/novedades": { en: "/news" },
+    "/novedades/pagina": { en: "/news/page" },
     "/projects/batucada-popular/historia": { en: "/projects/batucada-popular/history" },
     "/projects/batucada-popular/ecosistema": { en: "/projects/batucada-popular/ecosystem" },
 };
@@ -68,8 +69,11 @@ for (const [canonical, byLocale] of Object.entries(TRANSLATED_PATHS)) {
 
 /* Secciones cuyas subpáginas heredan la traducción del prefijo: cada
    actividad vive en `/novedades/<slug>` y en inglés en `/en/news/<slug>`,
-   con el mismo slug (ver src/utils/actividades.ts). */
-const TRANSLATED_PREFIXES = ["/novedades"] as const;
+   con el mismo slug (ver src/utils/actividades.ts), y las páginas del
+   listado en `/novedades/pagina/<n>` ↔ `/en/news/page/<n>`. El prefijo más
+   largo va primero: si no, `/news/page/2` se leería como la actividad
+   `page/2` de `/novedades`. */
+const TRANSLATED_PREFIXES = ["/novedades/pagina", "/novedades"] as const;
 
 /** `rest` si `pathname` es una subruta de `prefix` (`/news/x` bajo `/news` → `/x`). */
 const subpathOf = (pathname: string, prefix: string): string | undefined =>

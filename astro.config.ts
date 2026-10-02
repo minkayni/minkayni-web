@@ -11,6 +11,7 @@ import icon from "astro-icon";
 import react from "@astrojs/react";
 
 import modulepreload from "./src/integrations/modulepreload";
+import cssPorPagina from "./src/integrations/css-por-pagina";
 
 import { unified } from "@astrojs/markdown-remark";
 import { rehypePlugins } from "./src/utils/markdown-pipeline";
@@ -117,6 +118,9 @@ export default defineConfig({
         /* `fetchpriority="low"` en los scripts de módulo de cada página.
            Ver src/integrations/modulepreload.ts. */
         modulepreload(),
+        /* Cada página se queda solo con el CSS que puede usar. Ver
+           src/integrations/css-por-pagina.ts. */
+        cssPorPagina(),
         /* `client:lcp`: islas que hidratan con el LCP ya anotado. Ver
            src/directives/lcp.ts. */
         {
