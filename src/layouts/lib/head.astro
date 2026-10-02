@@ -151,7 +151,10 @@ const ogUrl = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : undefi
              - `data-intro="pending"`: solo en la portada, y solo cuando la
                intro va a reproducirse de verdad (visita nueva, sin
                `prefers-reduced-motion`, sin ahorro de datos ni red lenta, sin
-               ancla en la URL). Es la misma regla que aplica `intro.ts`; se
+               ancla en la URL, y sin robots: buscadores y medidores como
+               PageSpeed/Lighthouse reciben la portada directamente; la nota
+               de laboratorio sale sin la intro, los datos de visitantes reales
+               de Chrome no). Es la misma regla que aplica `intro.ts`; se
                decide aquí para que quien NO va a ver la intro reciba la
                portada pintada desde el primer cuadro en vez de una pantalla
                en blanco hasta que carga el script. */}
@@ -173,7 +176,16 @@ const ogUrl = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : undefi
                     } catch (e) {
                         /* Sin almacenamiento no hay memoria: ante la duda, la intro se ve. */
                     }
-                    if (nueva && !reduce && !lenta && !low && !location.hash) html.setAttribute("data-intro", "pending");
+                    /* Cualquier visita automatizada: navegadores controlados por
+                       código (`webdriver`: Selenium, Puppeteer, Playwright) y
+                       todo lo que se anuncie como robot, medidor o
+                       revisor. «CUBOT» es una marca de móviles, no un robot. */
+                    var ua = n.userAgent || "";
+                    var robot =
+                        n.webdriver === true ||
+                        (/bot|crawl|spider|slurp|scrap|headless|lighthouse|pagespeed|inspectiontool|preview|screenshot|prerender|render|phantom|puppeteer|playwright|selenium|validator|checker|monitor|uptime|pingdom|gtmetrix|facebookexternalhit|embedly|python|curl|wget|httpclient|okhttp|java\/|go-http|axios|node-fetch/i.test(ua) &&
+                            !/cubot/i.test(ua));
+                    if (nueva && !reduce && !lenta && !low && !robot && !location.hash) html.setAttribute("data-intro", "pending");
                 }
             } catch (e) {}
         </script>
