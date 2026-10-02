@@ -304,12 +304,10 @@ html[data-site-menu-open] .page-nav {
         opacity: 0;
     }
 
-    /* Pulsación: se hunde en el pointer-down y vuelve con resorte. `scale` y
-       `translate` sueltos (no `transform`) para no pisar el reveal de GSAP ni
-       la atracción magnética de magic-button.ts, que escribe `translate`. */
+    /* Pulsación: se hunde en el pointer-down y vuelve con resorte. `scale`
+       suelto (no `transform`) para no pisar el reveal de GSAP. */
     [data-magic-btn] {
         scale: 1;
-        translate: 0 0;
         transition: scale var(--spring-press-duration) var(--ease-spring-press);
     }
     [data-magic-btn]:active {

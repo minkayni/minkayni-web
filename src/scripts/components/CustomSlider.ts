@@ -348,7 +348,7 @@ const readState = (el: HTMLElement): SliderState =>
                 const { x, ...rest } = props;
                 const handoff = thrown?.card === c ? { velocity: thrown.velocity, distance: x - (gsap.getProperty(c, "x") as number) } : undefined;
                 gsap.to(c, { ...rest, ...springTween("snappy"), overwrite: "auto" });
-                gsap.to(c, { x, ...springTween(handoff ? "bouncy" : "snappy", handoff) });
+                gsap.to(c, { x, ...springTween("snappy", handoff) });
             });
         const bringFront = (card: HTMLElement) => {
             const list = ordered(),
@@ -435,6 +435,10 @@ const readState = (el: HTMLElement): SliderState =>
         };
         const pointerUp = (e: PointerEvent) => {
             if (!dragging) return;
+            /* pointercancel llega con clientX = 0 (el navegador se quedó el gesto:
+               scroll vertical o arrastre nativo). Leerlo como posición daba un
+               deslizamiento enorme a la izquierda y cambiaba de carta sola. */
+            const cancelled = e.type === "pointercancel";
             if (isAnimating) {
                 dragging.releasePointerCapture(e.pointerId);
                 dragging = null;
@@ -446,10 +450,10 @@ const readState = (el: HTMLElement): SliderState =>
                 flickL = vX / 1000 < -FLICK_VX && dx < -20,
                 list = ordered(),
                 thrown = { card: dragging, velocity: vX };
-            if (list.length > 1 && (dx > SWIPE_DX || flickR)) {
+            if (!cancelled && list.length > 1 && (dx > SWIPE_DX || flickR)) {
                 rotate(1, thrown);
                 vib(10);
-            } else if (list.length > 1 && (dx < -SWIPE_DX || flickL)) {
+            } else if (!cancelled && list.length > 1 && (dx < -SWIPE_DX || flickL)) {
                 rotate(-1, thrown);
                 vib(10);
             } else {
@@ -457,7 +461,7 @@ const readState = (el: HTMLElement): SliderState =>
                 const home = +dragging.dataset.jx!;
                 const from = gsap.getProperty(dragging, "x") as number;
                 gsap.to(dragging, { scale: 1, rotation: +dragging.dataset.rot!, ...springTween("press") });
-                gsap.to(dragging, { x: home, ...springTween("bouncy", { velocity: vX, distance: home - from }) });
+                gsap.to(dragging, { x: home, ...springTween("bouncy", { velocity: cancelled ? 0 : vX, distance: home - from }) });
                 if (activePreview) {
                     setActive(initialIdx);
                     activePreview = null;
@@ -470,6 +474,9 @@ const readState = (el: HTMLElement): SliderState =>
             dragging.releasePointerCapture(e.pointerId);
             dragging = null;
         };
+        /* La foto de la carta es un <img>: sin esto, arrastrarla con ratón
+           inicia el arrastre nativo de imágenes y el navegador cancela el gesto. */
+        section.addEventListener("dragstart", (e) => e.preventDefault());
         section.addEventListener("pointerdown", pointerDown);
         section.addEventListener("pointermove", pointerMove);
         section.addEventListener("pointerup", pointerUp);
