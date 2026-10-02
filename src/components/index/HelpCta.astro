@@ -76,7 +76,7 @@ const cards = [
                     <li class="flex">
                         <a
                             href={card.href}
-                            class={`group flex w-full flex-col gap-5 rounded-[1.75rem] p-7 transition hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary ${card.tone}`}
+                            class={`group flex w-full flex-col gap-5 rounded-[1.75rem] p-7 spring hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary ${card.tone}`}
                         >
                             <span class={`inline-flex h-12 w-12 items-center justify-center rounded-full ${card.iconTone}`} aria-hidden="true">
                                 <Icon name={card.icon} class="h-6 w-6" />
@@ -85,7 +85,7 @@ const cards = [
                             <span class="text-base leading-relaxed opacity-85">{card.text}</span>
                             <span class={`mt-auto inline-flex items-center gap-2 font-display text-lg font-bold underline underline-offset-4 ${card.linkTone}`}>
                                 {card.link}
-                                <span class="transition-transform group-hover:translate-x-1" aria-hidden="true">
+                                <span class="spring group-hover:translate-x-1" aria-hidden="true">
                                     →
                                 </span>
                             </span>

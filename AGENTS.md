@@ -37,6 +37,11 @@ El arranque y el build requieren `STRAPI_URL` y `STRAPI_TOKEN` válidos en `.env
 - El contenido debe ser visible en el HTML inicial. Las animaciones son mejora progresiva: nunca dejar secciones con `opacity: 0`, `visibility: hidden` o `display: none` dependiendo de que GSAP termine correctamente. Si una animación necesita partir de un estado oculto, la regla cuelga de `html[data-js]` (o `html[data-intro="pending"]` en la portada), que escribe `src/layouts/lib/head.astro` antes del primer pintado, y lleva una animación CSS de seguridad que restaura la visibilidad pasados unos segundos.
 - Cada página enlaza a la de aportes (`/donate`) y al contacto (`/about#contacto`); `tests/ad-grants.test.ts` lo comprueba sobre la build junto con el resto de requisitos de Google Ad Grants (ver README).
 - Respetar `prefers-reduced-motion` y dejar siempre un estado final usable.
+- Movimiento físico (basado en *Designing Fluid Interfaces*, WWDC 2018). Lo que el usuario toca o mueve usa resortes de `src/scripts/spring.ts`, no curvas fijas:
+  - Hover que desplaza o escala: utilidad `spring` en vez de `transition` (sin `duration-*`). Botones y enlaces-pastilla: `spring press`.
+  - Gestos (arrastrar, deslizar, lanzar): el elemento sigue al dedo 1:1 (`VelocityTracker`) y al soltar decide con `project()` y hereda la velocidad (`springTween(…, { velocity, distance })` o `Spring.to(…, { velocity })`). En los bordes, `rubberband()`, nunca un tope seco.
+  - Rebote solo si lo justifica un gesto (pulsar, soltar, lanzar) o un hover. Menús, paneles y reveals que aparecen solos entran sin pasarse (curvas de Apple o `SPRINGS.smooth`). Nunca rebote en opacidad ni en color.
+  - Las curvas CSS `--ease-spring-*` y sus `--spring-*-duration` se generan con `pnpm exec tsx tools/springs.ts`; `tests/spring.test.ts` falla si se desincronizan de `SPRINGS`.
 - Evitar `w-screen` en contenedores internos cuando pueda causar desbordamiento; preferir `w-full`, anchos máximos y padding responsivo.
 - Usar enlaces reales con `href`, estados de foco visibles, texto alternativo descriptivo y botones con etiquetas accesibles.
 - No introducir texto provisional (`Lorem ipsum`, `TODO`, `#` como destino) en interfaces terminadas.

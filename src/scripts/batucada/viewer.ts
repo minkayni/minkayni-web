@@ -24,6 +24,8 @@
 import { ScrollSmoother } from "../main";
 import type { ViewerPhoto } from "../../utils/sector-photos";
 import { clampOffset, distance, maxZoom, midpoint, offsetAfterZoom, type Point } from "./zoom";
+import { prefersReducedMotion } from "../platform";
+import { project, rubberband, Spring, VelocityTracker } from "../spring";
 
 export type ViewerStrings = {
     /** Nombre accesible del diálogo. */
@@ -188,6 +190,73 @@ let startDistance = 0;
 let startMid: Point = { x: 0, y: 0 };
 let startPoint: Point = { x: 0, y: 0 };
 
+/* Deslizar con la foto entera: la foto va pegada al dedo y, al soltar, decide
+   según dónde ACABARÍA el gesto (proyección de Apple), no dónde se soltó: un
+   golpe corto y rápido pasa de foto. La siguiente entra desde el lado hacia
+   el que se lanzó, heredando la velocidad; si no pasa, vuelve con un resorte.
+   `translate` y no `transform`, que es del zoom. */
+const swipeTracker = new VelocityTracker();
+const paintSwipe = () => {
+    const x = swipeX.value;
+    const y = swipeY.value;
+    image.style.translate = x || y ? `${x.toFixed(1)}px ${y.toFixed(1)}px` : "";
+};
+const swipeX = new Spring(0, "bouncy", paintSwipe);
+const swipeY = new Spring(0, "bouncy", paintSwipe);
+let swipeAxis: "x" | "y" | null = null;
+let swipeStart: Point = { x: 0, y: 0 };
+const followsFinger = () => !prefersReducedMotion();
+
+const resetSwipe = (): void => {
+    swipeX.jump(0);
+    swipeY.jump(0);
+};
+
+const trackSwipe = (dx: number, dy: number): void => {
+    if (!followsFinger()) return;
+    if (!swipeAxis && (Math.abs(dx) > DRAG_SLOP || Math.abs(dy) > DRAG_SLOP)) swipeAxis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+    if (swipeAxis === "x") {
+        const x = swipeStart.x + dx;
+        /* Sin foto hacia ese lado: cede como una goma en vez de topar. */
+        const edge = photos.length < 2 || (x > 0 && current === 0) || (x < 0 && current === photos.length - 1);
+        swipeX.jump(edge ? rubberband(x, mediaEl.clientWidth || 400) : x);
+    } else if (swipeAxis === "y") {
+        const y = swipeStart.y + dy;
+        swipeY.jump(y < 0 ? rubberband(y, mediaEl.clientHeight || 400) : y);
+    }
+};
+
+/** Termina un deslizamiento. `true` si pasó de foto o cerró. */
+const releaseSwipe = (dx: number, dy: number): boolean => {
+    const v = swipeTracker.velocity();
+    const axis = swipeAxis ?? (Math.abs(dx) > Math.abs(dy) ? "x" : "y");
+    swipeAxis = null;
+    const landX = dx + project(v.x, 0.99);
+    const landY = dy + project(v.y, 0.99);
+
+    if (axis === "x" && Math.abs(landX) > SWIPE_X && Math.sign(landX) === Math.sign(dx || landX)) {
+        const delta = landX < 0 ? 1 : -1;
+        const target = current + delta;
+        if (photos.length > 1 && target >= 0 && target < photos.length) {
+            step(delta);
+            if (followsFinger()) {
+                /* La nueva foto entra desde el lado contrario, con el impulso del dedo. */
+                swipeY.jump(0);
+                swipeX.jump(delta * Math.min(120, (mediaEl.clientWidth || 400) * 0.25));
+                swipeX.to(0, { velocity: v.x, spring: "bouncy" });
+            }
+            return true;
+        }
+    }
+    if (axis === "y" && landY > SWIPE_DOWN && dy > 0) {
+        close();
+        return true;
+    }
+    swipeX.to(0, { velocity: v.x, spring: "bouncy" });
+    swipeY.to(0, { velocity: v.y, spring: "bouncy" });
+    return false;
+};
+
 const twoPointers = (): [Point, Point] => {
     const [a, b] = [...pointers.values()];
     return [a, b];
@@ -210,7 +279,14 @@ function onPointerDown(event: PointerEvent): void {
         startPoint = { x: event.clientX, y: event.clientY };
         startOffset = { ...offset };
         mode = scale > 1 ? "pan" : "swipe";
+        /* Agarrar la foto mientras aún vuelve: parte de donde se ve, no de 0. */
+        swipeStart = { x: swipeX.value, y: swipeY.value };
+        swipeAxis = null;
+        swipeTracker.reset();
+        swipeTracker.add(event.clientX, event.clientY);
     } else if (pointers.size === 2) {
+        swipeX.to(0, { spring: "snappy" });
+        swipeY.to(0, { spring: "snappy" });
         const [a, b] = twoPointers();
         mode = "pinch";
         dragged = true;
@@ -249,6 +325,11 @@ function onPointerMove(event: PointerEvent): void {
     const dy = event.clientY - startPoint.y;
     if (Math.abs(dx) > DRAG_SLOP || Math.abs(dy) > DRAG_SLOP) dragged = true;
 
+    if (mode === "swipe") {
+        swipeTracker.add(event.clientX, event.clientY);
+        trackSwipe(dx, dy);
+    }
+
     if (mode === "pan") {
         offset = clampOffset({ x: startOffset.x + dx, y: startOffset.y + dy }, scale, mediaBox());
         paintZoom();
@@ -264,7 +345,8 @@ function onPointerUp(event: PointerEvent): void {
     if (was === "swipe" && pointers.size === 0) {
         const dx = event.clientX - startPoint.x;
         const dy = event.clientY - startPoint.y;
-        if (Math.abs(dx) > SWIPE_X && Math.abs(dx) > Math.abs(dy)) step(dx < 0 ? 1 : -1);
+        if (followsFinger()) releaseSwipe(dx, dy);
+        else if (Math.abs(dx) > SWIPE_X && Math.abs(dx) > Math.abs(dy)) step(dx < 0 ? 1 : -1);
         else if (dy > SWIPE_DOWN && dy > Math.abs(dx)) close();
     }
 
@@ -588,6 +670,7 @@ const unlockPage = (): void => {
 export function close(): void {
     if (!isOpen()) return;
     resetZoom();
+    resetSwipe();
     pointers.clear();
     stopTracking();
     root!.classList.add("hidden");

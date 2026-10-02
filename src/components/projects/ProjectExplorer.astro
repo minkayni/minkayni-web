@@ -133,7 +133,7 @@ const hasImage = (project: ProjectItem) => Boolean(project.image?.url || project
                             href={project.href}
                             target={project.external ? "_blank" : undefined}
                             rel={project.external ? "noopener noreferrer" : undefined}
-                            class={`mt-7 inline-flex w-fit min-h-12 items-center rounded-full px-5 py-3 font-display font-bold transition hover:-translate-y-1 focus-visible:outline-2 focus-visible:outline-offset-4 ${hasImage(project) || project.accent === "primary" ? "bg-white text-primary focus-visible:outline-white" : "bg-black text-white focus-visible:outline-black"}`}
+                            class={`mt-7 inline-flex w-fit min-h-12 items-center rounded-full px-5 py-3 font-display font-bold spring press hover:-translate-y-1 focus-visible:outline-2 focus-visible:outline-offset-4 ${hasImage(project) || project.accent === "primary" ? "bg-white text-primary focus-visible:outline-white" : "bg-black text-white focus-visible:outline-black"}`}
                         >
                             {project.linkText}
                             <span class="ml-2" aria-hidden="true">↗</span>

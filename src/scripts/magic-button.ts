@@ -10,6 +10,35 @@
 import { gsap, SplitText, waitForFontsReady } from "./main";
 import { appleOut } from "./easing";
 import { prefersReducedMotion } from "./platform";
+import { Spring } from "./spring";
+
+/* Atracción magnética: el botón se inclina hacia el cursor (un cuarto del
+   desvío, como mucho MAGNET_MAX px) siguiéndolo con un resorte, X e Y por
+   separado como pide Apple para el movimiento 2D. Al salir vuelve al centro
+   CONSERVANDO la velocidad que traía: si el cursor se fue rápido, el botón
+   lo acompaña un poco y rebota al volver; si se fue despacio, apenas. Solo
+   con ratón: en táctil no hay hover que seguir. */
+const MAGNET_PULL = 0.25;
+const MAGNET_MAX = 10;
+
+const attachMagnet = (btn: HTMLElement): void => {
+    if (!matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    const paint = () => (btn.style.translate = `${sx.value.toFixed(2)}px ${sy.value.toFixed(2)}px`);
+    const sx = new Spring(0, "follow", paint);
+    const sy = new Spring(0, "follow", paint);
+    const clamp = (v: number) => Math.max(-MAGNET_MAX, Math.min(MAGNET_MAX, v));
+
+    btn.addEventListener("pointermove", (e) => {
+        if (e.pointerType !== "mouse") return;
+        const r = btn.getBoundingClientRect();
+        sx.to(clamp((e.clientX - (r.left + r.width / 2)) * MAGNET_PULL), { spring: "follow" });
+        sy.to(clamp((e.clientY - (r.top + r.height / 2)) * MAGNET_PULL), { spring: "follow" });
+    });
+    btn.addEventListener("pointerleave", () => {
+        sx.to(0, { spring: "bouncy" });
+        sy.to(0, { spring: "bouncy" });
+    });
+};
 
 export const initMagicButton = (btn: HTMLAnchorElement): void => {
     if (btn.dataset.magicBtnReady) return;
@@ -73,6 +102,7 @@ export const initMagicButton = (btn: HTMLAnchorElement): void => {
         };
         add(["pointerenter", "focusin"], playAll);
         add(["pointerleave", "focusout"], reverseAll);
+        attachMagnet(btn);
     };
 
     waitForFontsReady(setup);

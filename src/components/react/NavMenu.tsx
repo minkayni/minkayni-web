@@ -22,13 +22,16 @@
      portada para no adelantarse a la intro. */
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, useReducedMotion } from 'motion/react';
+import { MotionConfig, motion, useReducedMotion } from 'motion/react';
 import { APPLE_BEZIER, APPLE_OUT_BEZIER } from '../../scripts/easing';
 import type { MenuLabels, MenuLanguage, MenuLink, MenuProject } from './menu-types';
 
-/* Curvas de Apple (scripts/easing.ts) en lugar de resortes: el panel cambia
-   de tamaño con la de interfaz y los ítems entran con la de entrada. */
+/* El panel aparece con la curva de Apple, sin rebote: un menú que surge solo
+   no debe pasarse de sitio. Pero al pasar de un ítem a otro el panel VIAJA
+   siguiendo al cursor (layoutId), y eso es movimiento físico: resorte con un
+   rebote leve (SPRINGS.snappy de scripts/spring.ts en la API de motion). */
 const transition = { duration: 0.35, ease: APPLE_BEZIER };
+const morph = { type: 'spring', visualDuration: 0.35, bounce: 0.2 } as const;
 
 const listVariants = {
   hidden: {},
@@ -137,14 +140,14 @@ export const MenuItem = ({ setActive, active, item, href, current, chevron, onPa
             >
               <motion.div initial={{ opacity: 0, scale: 0.85, y: -10 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={transition} style={{ transformOrigin: 'top center' }}>
                 <motion.div
-                  transition={transition}
+                  transition={morph}
                   layoutId="nav-menu-active"
                   /* Sigue desplazándose si no cabe, pero sin barra visible: con
                      el cambio de tamaño entre paneles (`layout`) asomaba un
                      instante. */
                   className="max-h-[calc(100svh-7rem)] overflow-y-auto overflow-x-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden rounded-[1.75rem] border border-black/10 bg-[var(--bg-white)] text-black shadow-[0_24px_60px_rgba(35,15,55,0.22)] backdrop-blur-sm"
                 >
-                  <motion.div layout className="h-full w-max p-4">
+                  <motion.div layout transition={morph} className="h-full w-max p-4">
                     {children}
                   </motion.div>
                 </motion.div>
@@ -263,62 +266,66 @@ export default function NavMenu({ items, projectsHref, projects, languages, labe
   const projectsText = projects.filter(p => !p.src);
 
   return (
-    <motion.nav
-      aria-label={labels.navigation}
-      /* Invisible durante la intro, pero no debe recibir el puntero: el hover
-         abría el megamenú sobre una barra que aún no se veía. */
-      style={{ pointerEvents: ready || reduced ? undefined : 'none' }}
-      variants={reduced ? undefined : listVariants}
-      initial={reduced ? false : 'hidden'}
-      animate={reduced ? undefined : ready ? 'visible' : 'hidden'}
-      onMouseEnter={cancelClose}
-      onMouseLeave={scheduleClose}
-      onBlur={event => {
-        const next = event.relatedTarget as Element | null;
-        if (!event.currentTarget.contains(next) && !next?.closest?.('[data-nav-menu-panel]')) setActive(null);
-      }}
-      className="flex shrink-0 items-center gap-8 whitespace-nowrap"
-    >
-      {items.map(link =>
-        projectsMatch(link.href) ? (
-          <MenuItem key={link.href} setActive={activate} active={active} item={link.label} href={link.href} current={link.current} chevron onPanelEnter={cancelClose} onPanelLeave={scheduleClose}>
-            <div className="flex w-[46rem] max-w-[calc(100vw-3rem)] gap-5">
-              {projectsWithImage.length > 0 && (
-                <div className="flex w-[15rem] shrink-0 flex-col gap-1 border-r border-black/10 pr-5">
-                  {projectsWithImage.map(project => (
+    /* Con movimiento reducido motion deja los cambios de opacidad y anula
+       los de posición, tamaño y escala (incluido el resorte del panel). */
+    <MotionConfig reducedMotion="user">
+      <motion.nav
+        aria-label={labels.navigation}
+        /* Invisible durante la intro, pero no debe recibir el puntero: el hover
+           abría el megamenú sobre una barra que aún no se veía. */
+        style={{ pointerEvents: ready || reduced ? undefined : 'none' }}
+        variants={reduced ? undefined : listVariants}
+        initial={reduced ? false : 'hidden'}
+        animate={reduced ? undefined : ready ? 'visible' : 'hidden'}
+        onMouseEnter={cancelClose}
+        onMouseLeave={scheduleClose}
+        onBlur={event => {
+          const next = event.relatedTarget as Element | null;
+          if (!event.currentTarget.contains(next) && !next?.closest?.('[data-nav-menu-panel]')) setActive(null);
+        }}
+        className="flex shrink-0 items-center gap-8 whitespace-nowrap"
+      >
+        {items.map(link =>
+          projectsMatch(link.href) ? (
+            <MenuItem key={link.href} setActive={activate} active={active} item={link.label} href={link.href} current={link.current} chevron onPanelEnter={cancelClose} onPanelLeave={scheduleClose}>
+              <div className="flex w-[46rem] max-w-[calc(100vw-3rem)] gap-5">
+                {projectsWithImage.length > 0 && (
+                  <div className="flex w-[15rem] shrink-0 flex-col gap-1 border-r border-black/10 pr-5">
+                    {projectsWithImage.map(project => (
+                      <ProductItem key={project.href + project.title} {...project} />
+                    ))}
+                  </div>
+                )}
+                <div className="grid flex-1 grid-cols-2 content-start gap-x-3 gap-y-0.5">
+                  {projectsText.map(project => (
                     <ProductItem key={project.href + project.title} {...project} />
                   ))}
                 </div>
-              )}
-              <div className="grid flex-1 grid-cols-2 content-start gap-x-3 gap-y-0.5">
-                {projectsText.map(project => (
-                  <ProductItem key={project.href + project.title} {...project} />
-                ))}
               </div>
-            </div>
-            <a
-              href={projectsHref}
-              className="mt-3 flex items-center justify-between rounded-2xl bg-primary/5 px-4 py-3 font-display text-[0.92rem] font-bold text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            >
-              {labels.allProjects}
-              <span aria-hidden="true">↗</span>
-            </a>
-          </MenuItem>
-        ) : (
-          <MenuItem key={link.href} setActive={activate} active={active} item={link.label} href={link.href} current={link.current} />
-        )
-      )}
+              <a
+                href={projectsHref}
+                className="mt-3 flex items-center justify-between rounded-2xl bg-primary/5 px-4 py-3 font-display text-[0.92rem] font-bold text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                {labels.allProjects}
+                <span aria-hidden="true">↗</span>
+              </a>
+            </MenuItem>
+          ) : (
+            <MenuItem key={link.href} setActive={activate} active={active} item={link.label} href={link.href} current={link.current} />
+          )
+        )}
 
-      {current && (
-        <MenuItem setActive={activate} active={active} item={current.short} chevron onPanelEnter={cancelClose} onPanelLeave={scheduleClose}>
-          <div className="flex min-w-[10.5rem] flex-col">
-            <span className="px-3 pb-1 pt-1 text-[0.64rem] font-bold uppercase tracking-[0.22em] text-black/45">{labels.language}</span>
-            {languages.map(lang => (
-              <HoveredLink key={lang.code} {...lang} />
-            ))}
-          </div>
-        </MenuItem>
-      )}
-    </motion.nav>
+        {current && (
+          <MenuItem setActive={activate} active={active} item={current.short} chevron onPanelEnter={cancelClose} onPanelLeave={scheduleClose}>
+            <div className="flex min-w-[10.5rem] flex-col">
+              <span className="px-3 pb-1 pt-1 text-[0.64rem] font-bold uppercase tracking-[0.22em] text-black/45">{labels.language}</span>
+              {languages.map(lang => (
+                <HoveredLink key={lang.code} {...lang} />
+              ))}
+            </div>
+          </MenuItem>
+        )}
+      </motion.nav>
+    </MotionConfig>
   );
 }

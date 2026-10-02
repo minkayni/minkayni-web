@@ -339,7 +339,7 @@ export default function SiteMenu({ items, projectsHref, projects, languages, soc
                       rel="noopener noreferrer"
                       aria-label={s.label}
                       title={s.label}
-                      className="sm-socials-link inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-[var(--bg-white)] transition-[background-color,color,transform] duration-300 hover:-translate-y-0.5 hover:bg-accent hover:text-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                      className="sm-socials-link inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-[var(--bg-white)] spring press hover:-translate-y-0.5 hover:bg-accent hover:text-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                     >
                       {socialIcon(s.label) ?? <span className="text-[0.7rem] font-bold uppercase">{s.label.slice(0, 2)}</span>}
                     </a>

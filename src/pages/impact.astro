@@ -57,7 +57,7 @@ const statStyles = [
                 d.stats.map((stat, index) => {
                     const style = statStyles[index % statStyles.length];
                     return (
-                        <div class={`rounded-[2.25rem] p-8 transition duration-300 hover:-translate-y-2 ${style.bg}`}>
+                        <div class={`rounded-[2.25rem] p-8 spring hover:-translate-y-2 ${style.bg}`}>
                             <p class="font-display text-6xl font-black tabular-nums">
                                 <span data-count={stat.target} data-count-prefix={stat.prefix ?? ""} data-count-suffix={stat.suffix ?? ""}>{stat.value}</span>
                             </p>
@@ -129,7 +129,7 @@ const statStyles = [
         <div class="grid gap-5 md:grid-cols-2" data-reveal-group>
             {
                 d.awards.map((r) => (
-                    <article class="flex flex-col rounded-[2.25rem] bg-surface p-8 transition duration-300 hover:-translate-y-2 sm:p-10">
+                    <article class="flex flex-col rounded-[2.25rem] bg-surface p-8 spring hover:-translate-y-2 sm:p-10">
                         <div class="flex flex-wrap items-center gap-2">
                             {r.year && <span class="rounded-full bg-primary px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-white">{r.year}</span>}
                             {r.recipient && <span class="rounded-full bg-accent px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-black">{r.recipient}</span>}
@@ -197,7 +197,7 @@ const statStyles = [
                 d.journeyCards.map((item) => (
                     <a
                         href={item.href}
-                        class="group flex flex-col rounded-[2.25rem] border border-black/10 p-8 transition duration-300 hover:-translate-y-2 hover:border-primary/40 hover:shadow-[0_24px_50px_rgba(35,15,55,0.12)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary sm:p-10"
+                        class="group flex flex-col rounded-[2.25rem] border border-black/10 p-8 spring hover:-translate-y-2 hover:border-primary/40 hover:shadow-[0_24px_50px_rgba(35,15,55,0.12)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary sm:p-10"
                     >
                         <p class="text-xs font-bold uppercase tracking-[0.22em] text-black/50 transition group-hover:text-primary">{item.eyebrow}</p>
                         <h3 class="mt-4 font-display text-2xl font-bold text-black transition group-hover:text-primary">{item.title}</h3>

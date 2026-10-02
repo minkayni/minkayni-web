@@ -1,5 +1,5 @@
 import { gsap, Draggable, InertiaPlugin } from "../../scripts/main";
-import { apple } from "../../scripts/easing";
+import { springTween } from "../../scripts/spring";
 import { isMobileViewport, prefersReducedMotion } from "../../scripts/platform";
 import { onWidthResize } from "../../scripts/viewport";
 
@@ -213,7 +213,7 @@ export const init = () => {
     wrapperEl.addEventListener("pointerleave", onHoverLeave);
 
     // Click en cada caja: centrar ese box (toIndex directo)
-    boxes.forEach((box, i) => box.addEventListener("click", () => loop.toIndex(i, { duration: 0.8, ease: apple })));
+    boxes.forEach((box, i) => box.addEventListener("click", () => loop.toIndex(i, springTween("snappy"))));
 
     /* Solo un cambio de ancho reconstruye la cinta: la barra de direcciones
        del móvil también dispara `resize` y devolvía el carrusel al inicio. */

@@ -89,13 +89,13 @@ const englishCopy = {
                             <a
                                 href={localizePath(item.href, locale)}
                                 data-i18n-link={item.key}
-                                class="group flex h-full min-h-[5.5rem] items-start gap-4 rounded-[1.75rem] border border-black/10 bg-white/60 px-6 py-5 transition hover:-translate-y-0.5 hover:border-primary hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                                class="group flex h-full min-h-[5.5rem] items-start gap-4 rounded-[1.75rem] border border-black/10 bg-white/60 px-6 py-5 spring hover:-translate-y-0.5 hover:border-primary hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                             >
                                 <Icon name={item.icon} class="mt-0.5 h-6 w-6 shrink-0 text-primary" aria-hidden="true" />
                                 <span>
                                     <span class="flex items-center gap-2 font-display text-lg font-black leading-snug text-black">
                                         <span data-i18n={item.titleKey}>{t(item.titleKey)}</span>
-                                        <span class="translate-x-0 text-primary transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true">
+                                        <span class="translate-x-0 text-primary spring group-hover:translate-x-1" aria-hidden="true">
                                             →
                                         </span>
                                     </span>

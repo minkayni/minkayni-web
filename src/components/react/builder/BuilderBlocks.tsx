@@ -156,7 +156,7 @@ function BlockView({ block, strapiUrl }: { block: Block; strapiUrl: string }) {
                         {block.stats.map((stat, index) => {
                             const style = statStyles[index % statStyles.length];
                             return (
-                                <div key={index} className={`rounded-[2.25rem] p-8 transition duration-300 hover:-translate-y-2 ${style.bg}`}>
+                                <div key={index} className={`rounded-[2.25rem] p-8 spring hover:-translate-y-2 ${style.bg}`}>
                                     <p className="font-display text-6xl font-black tabular-nums">
                                         <span data-count={stat.target ?? undefined} data-count-prefix={stat.prefix ?? ""} data-count-suffix={stat.suffix ?? ""}>
                                             {stat.value}
@@ -179,7 +179,7 @@ function BlockView({ block, strapiUrl }: { block: Block; strapiUrl: string }) {
                         {block.cards.map((card, index) => {
                             const style = cardStyles[index % cardStyles.length];
                             return (
-                                <div key={index} className={`rounded-[2.25rem] p-8 transition duration-300 hover:-translate-y-2 sm:p-10 ${style.card}`}>
+                                <div key={index} className={`rounded-[2.25rem] p-8 spring hover:-translate-y-2 sm:p-10 ${style.card}`}>
                                     <h3 className="mb-3 font-display text-2xl font-bold">{card.title}</h3>
                                     <p className={`leading-relaxed ${style.dim}`}>{card.description}</p>
                                 </div>
@@ -220,7 +220,7 @@ function BlockView({ block, strapiUrl }: { block: Block; strapiUrl: string }) {
                     <SectionHeading heading={block.heading} className="mb-12 max-w-[760px]" eyebrowClass={`${EYEBROW} text-secondary-deep`} titleClass="font-display text-4xl font-black leading-none text-primary sm:text-6xl" bodyClass={BODY} />
                     <div className="grid gap-5 md:grid-cols-2" data-reveal-group>
                         {block.awards.map((r, index) => (
-                            <article key={index} className="flex flex-col rounded-[2.25rem] bg-surface p-8 transition duration-300 hover:-translate-y-2 sm:p-10">
+                            <article key={index} className="flex flex-col rounded-[2.25rem] bg-surface p-8 spring hover:-translate-y-2 sm:p-10">
                                 <div className="flex flex-wrap items-center gap-2">
                                     {r.year && <span className="rounded-full bg-primary px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-white">{r.year}</span>}
                                     {r.org && <span className="rounded-full bg-black/10 px-3 py-1 text-xs font-bold text-black">{r.org}</span>}
@@ -285,7 +285,7 @@ function BlockView({ block, strapiUrl }: { block: Block; strapiUrl: string }) {
                                 href={item.href ?? undefined}
                                 target={item.external ? "_blank" : undefined}
                                 rel={item.external ? "noopener noreferrer" : undefined}
-                                className="group flex flex-col rounded-[2.25rem] border border-black/10 p-8 transition duration-300 hover:-translate-y-2 hover:border-primary/40 hover:shadow-[0_24px_50px_rgba(35,15,55,0.12)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary sm:p-10"
+                                className="group flex flex-col rounded-[2.25rem] border border-black/10 p-8 spring hover:-translate-y-2 hover:border-primary/40 hover:shadow-[0_24px_50px_rgba(35,15,55,0.12)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary sm:p-10"
                             >
                                 {item.eyebrow && <p className="text-xs font-bold uppercase tracking-[0.22em] text-black/50 transition group-hover:text-primary">{item.eyebrow}</p>}
                                 <h3 className="mt-4 font-display text-2xl font-bold text-black transition group-hover:text-primary">{item.title}</h3>
@@ -337,7 +337,7 @@ function BlockView({ block, strapiUrl }: { block: Block; strapiUrl: string }) {
                                     href={block.secondary.href}
                                     target={isExternal(block.secondary.href) ? "_blank" : undefined}
                                     rel={isExternal(block.secondary.href) ? "noopener noreferrer" : undefined}
-                                    className="inline-flex min-h-12 items-center justify-center rounded-full bg-black px-7 py-3 text-center font-display font-bold text-white transition hover:-translate-y-1 hover:bg-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-black"
+                                    className="inline-flex min-h-12 items-center justify-center rounded-full bg-black px-7 py-3 text-center font-display font-bold text-white spring press hover:-translate-y-1 hover:bg-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-black"
                                 >
                                     {block.secondary.text}
                                 </a>
