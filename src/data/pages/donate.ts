@@ -92,7 +92,7 @@ export const donateFallback = {
     english: {
         title: "Donar desde fuera de Ecuador",
         body: "La Fundación MINKAYNI es una organización sin fines de lucro con sede en Guayaquil, Ecuador. La moneda oficial del país es el dólar estadounidense, así que una donación en USD nos llega sin conversión de moneda.",
-        note: "Usa los datos de cuenta de esta página —la sección del giro reúne todo lo que te pedirá tu banco— o envía el dinero con Wise o Remitly, que suelen costar mucho menos que un giro bancario. Manda el comprobante a admin@minkayni.org y te enviamos nuestro certificado de donación. Una donación directa a una organización extranjera normalmente no es deducible de impuestos en tu país; si tu organización necesita un recibo deducible, escríbenos y buscamos juntos una vía.",
+        note: "Usa los datos de cuenta de esta página —la sección del giro reúne todo lo que te pedirá tu banco— o envía el dinero con Wise o Remitly, que suelen costar mucho menos que un giro bancario. Manda el comprobante a info@minkayni.org y te enviamos nuestro certificado de donación. Una donación directa a una organización extranjera normalmente no es deducible de impuestos en tu país; si tu organización necesita un recibo deducible, escríbenos y buscamos juntos una vía.",
     },
 
     faqHeading: {
@@ -108,7 +108,7 @@ export const donateFallback = {
         },
         {
             question: "¿Recibo un comprobante de la fundación?",
-            answer: "Sí. Envía el comprobante de tu transferencia a admin@minkayni.org o por WhatsApp y te devolvemos el certificado de donación de la fundación.",
+            answer: "Sí. Envía el comprobante de tu transferencia a info@minkayni.org o por WhatsApp y te devolvemos el certificado de donación de la fundación.",
         },
         {
             question: "¿Puedo donar todos los meses?",
@@ -144,7 +144,7 @@ export const donateFallback = {
         { title: "Alianzas institucionales", description: "Cooperación, financiamiento de programas y proyectos conjuntos con organizaciones y empresas." },
     ],
 
-    contactButton: { href: "mailto:admin@minkayni.org", defaultText: "Enviar comprobante 💜", hoverText: "admin@minkayni.org ✨" },
+    contactButton: { href: "mailto:info@minkayni.org", defaultText: "Enviar comprobante 💜", hoverText: "info@minkayni.org ✨" },
     whatsappLink: { text: "Escríbenos por WhatsApp", href: "https://wa.me/593985261647" },
 
     legalNote: "Somos una organización sin fines de lucro con personería jurídica en Ecuador y rendimos cuentas de cada aporte.",
@@ -225,7 +225,7 @@ export const donateFallbackEn: DonateContent = {
     english: {
         title: "Donating from outside Ecuador",
         body: "Fundación MINKAYNI is a non-profit based in Guayaquil, Ecuador. The country's official currency is the US dollar, so a gift in USD reaches us with no currency conversion.",
-        note: "Use the account details on this page — the wire section lists everything your bank will ask for — or send the funds through Wise or Remitly, usually far cheaper than a bank wire. Email the receipt to admin@minkayni.org and we will send you our donation certificate. A direct gift to a foreign charity is normally not tax-deductible in your own country; if your organisation needs a deductible receipt, write to us and we will look for a route together.",
+        note: "Use the account details on this page — the wire section lists everything your bank will ask for — or send the funds through Wise or Remitly, usually far cheaper than a bank wire. Email the receipt to info@minkayni.org and we will send you our donation certificate. A direct gift to a foreign charity is normally not tax-deductible in your own country; if your organisation needs a deductible receipt, write to us and we will look for a route together.",
     },
 
     faqHeading: {
@@ -241,7 +241,7 @@ export const donateFallbackEn: DonateContent = {
         },
         {
             question: "Do I get a receipt from the foundation?",
-            answer: "Yes. Send the proof of your transfer to admin@minkayni.org or by WhatsApp and we will send back the foundation's donation certificate.",
+            answer: "Yes. Send the proof of your transfer to info@minkayni.org or by WhatsApp and we will send back the foundation's donation certificate.",
         },
         {
             question: "Can I give every month?",
@@ -277,7 +277,7 @@ export const donateFallbackEn: DonateContent = {
         { title: "Institutional partnerships", description: "Cooperation, programme funding and joint projects with organisations and companies." },
     ],
 
-    contactButton: { href: "mailto:admin@minkayni.org", defaultText: "Send your receipt 💜", hoverText: "admin@minkayni.org ✨" },
+    contactButton: { href: "mailto:info@minkayni.org", defaultText: "Send your receipt 💜", hoverText: "info@minkayni.org ✨" },
     whatsappLink: { text: "Message us on WhatsApp", href: "https://wa.me/593985261647" },
 
     legalNote: "We are a non-profit organisation with legal personality in Ecuador and we account for every gift.",

@@ -217,7 +217,7 @@ export const aboutFallback = {
         title: "El ritmo crece cuando alguien más se suma.",
         body: "Si representas a una organización de cooperación, una empresa, una universidad o un organismo internacional, conversemos: cada alianza sostiene liderazgo juvenil, arte comunitario y construcción de paz desde los barrios populares de Guayaquil.",
     },
-    contactButton: { href: "mailto:xavier.moreira@minkayni.org", defaultText: "Escríbenos 💌", hoverText: "Hagamos minka 🥁" },
+    contactButton: { href: "mailto:info@minkayni.org", defaultText: "Escríbenos 💌", hoverText: "Hagamos minka 🥁" },
     contactSecondary: { text: "Síguenos en Instagram", href: "https://www.instagram.com/batucada_popular_/" },
     /* Meta description propia: sin ella todas las páginas heredaban la
        descripción global y competían entre sí en los buscadores. */
