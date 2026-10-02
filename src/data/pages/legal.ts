@@ -33,7 +33,7 @@ export const legalFallback = {
     addressLocality: "Parroquia Febres Cordero, Guayaquil",
     addressRegion: "Guayas",
     addressCountry: "Ecuador",
-    email: "admin@minkayni.org",
+    email: "info@minkayni.org",
     /* Teléfono institucional: el mismo número que el sitio ya publica en
        /donar y /batucada (global.ts → whatsappUrl). Se repite a propósito —
        un verificador que cruce el sitio con el registro debe encontrar
@@ -54,7 +54,7 @@ export const legalFallback = {
     documents: [] as Array<{ title?: string | null; note?: string | null; file?: { url?: string | null; name?: string | null } | null }>,
 
     /* Nota legal al pie del bloque */
-    note: "Los certificados originales (RUC, constancia de registro SUIOS, registro de directiva y estatutos) están disponibles para procesos de verificación, auditoría y debida diligencia. Solicítalos a admin@minkayni.org.",
+    note: "Los certificados originales (RUC, constancia de registro SUIOS, registro de directiva y estatutos) están disponibles para procesos de verificación, auditoría y debida diligencia. Solicítalos a info@minkayni.org.",
 
     /* Enlace del footer hacia la página completa */
     pageLink: { text: "Transparencia legal", href: "/transparencia" },
@@ -103,7 +103,7 @@ export const legalFallbackEn: LegalContent = {
         { text: "Check the SUIOS registration", href: "https://www.sociedadcivil.gob.ec/" },
     ],
 
-    note: "The original certificates (RUC, SUIOS registration certificate, board registration and statutes) are available for verification, audit and due diligence processes. Request them at admin@minkayni.org.",
+    note: "The original certificates (RUC, SUIOS registration certificate, board registration and statutes) are available for verification, audit and due diligence processes. Request them at info@minkayni.org.",
 
     pageLink: { text: "Legal transparency", href: "/transparencia" },
 

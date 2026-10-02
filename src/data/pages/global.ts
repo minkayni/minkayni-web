@@ -7,7 +7,7 @@ export const globalFallback = {
         metaTitle: "Fundación Minkayni",
         metaDescription: "Fundación Minkayni transforma comunidades a través del arte, el liderazgo juvenil y la cultura de paz en Guayaquil.",
     },
-    contactEmail: "xavier.moreira@minkayni.org",
+    contactEmail: "info@minkayni.org",
     whatsappUrl: "https://wa.me/593985261647",
     menuLabel: "Fundación MINKAYNI",
     pageNav: [
