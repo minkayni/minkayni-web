@@ -29,10 +29,19 @@ const pickMedia = (post: { source?: Media; poster?: Media }) => {
     return { video, image };
 };
 
-const items = posts.filter(({ data }) => {
-    const { video, image } = pickMedia(data);
-    return Boolean(video || image);
-});
+/* Solo las más recientes: cada tarjeta pesa ~3 KB de HTML y la portada tiene
+   un presupuesto (tests/ad-grants.test.ts). El archivo completo vive en
+   /novedades. Doce bastan para que el carrusel en bucle llene cualquier pantalla. */
+const MAX_POSTS = 12;
+const postedAt = (value: unknown) => (typeof value === "string" ? Date.parse(value) || 0 : 0);
+
+const items = posts
+    .filter(({ data }) => {
+        const { video, image } = pickMedia(data);
+        return Boolean(video || image);
+    })
+    .sort((a, b) => postedAt(b.data.posted_at) - postedAt(a.data.posted_at))
+    .slice(0, MAX_POSTS);
 ---
 
 <div class="bg-primary w-full">
