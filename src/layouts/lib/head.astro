@@ -154,7 +154,8 @@ const ogUrl = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : undefi
                ancla en la URL, y sin robots: buscadores y medidores como
                PageSpeed/Lighthouse reciben la portada directamente; la nota
                de laboratorio sale sin la intro, los datos de visitantes reales
-               de Chrome no). Es la misma regla que aplica `intro.ts`; se
+               de Chrome no). `?intro` en la URL la fuerza para revisarla.
+               Es la misma regla que aplica `intro.ts`; se
                decide aquí para que quien NO va a ver la intro reciba la
                portada pintada desde el primer cuadro en vez de una pantalla
                en blanco hasta que carga el script. */}
@@ -185,7 +186,10 @@ const ogUrl = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : undefi
                         n.webdriver === true ||
                         (/bot|crawl|spider|slurp|scrap|headless|lighthouse|pagespeed|inspectiontool|preview|screenshot|prerender|render|phantom|puppeteer|playwright|selenium|validator|checker|monitor|uptime|pingdom|gtmetrix|facebookexternalhit|embedly|python|curl|wget|httpclient|okhttp|java\/|go-http|axios|node-fetch/i.test(ua) &&
                             !/cubot/i.test(ua));
-                    if (nueva && !reduce && !lenta && !low && !robot && !location.hash) html.setAttribute("data-intro", "pending");
+                    /* `?intro` la fuerza siempre, para revisarla sin borrar la
+                       memoria de visita. Ver también intro.ts. */
+                    var forzada = /[?&]intro(=|&|$)/.test(location.search);
+                    if (forzada || (nueva && !reduce && !lenta && !low && !robot && !location.hash)) html.setAttribute("data-intro", "pending");
                 }
             } catch (e) {}
         </script>

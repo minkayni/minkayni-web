@@ -361,8 +361,11 @@ export const initIntro = (prefersReduced: boolean): void => {
        que había aquí (visita nueva —ver src/scripts/visita.ts—, sin
        `prefers-reduced-motion`, sin ahorro de datos ni red lenta). Si no
        marcó la página, el contenido ya está a la vista y no hay nada que
-       tapar: se salta directamente al estado final. */
-    if (document.documentElement.dataset.intro !== "pending" || scrollY > 50 || prefersReduced) {
+       tapar: se salta directamente al estado final. Con `?intro` en la URL
+       se reproduce siempre, también con movimiento reducido: es para
+       revisarla a propósito. */
+    const forzada = new URLSearchParams(location.search).has("intro");
+    if (document.documentElement.dataset.intro !== "pending" || (!forzada && (scrollY > 50 || prefersReduced))) {
         finalizeImmediate();
         return;
     }
