@@ -123,27 +123,21 @@ export default function SiteMenu({ items, projectsHref, projects, languages, soc
        último y el más lento, cubre a los anteriores. */
     const closed = circleAt(0);
     const opened = circleAt(coverRadius());
-    /* Las capas de color acompañan al panel desde la hamburguesa pero no
-       llegan a la esquina opuesta: si lo hacían, justo antes de que el panel
-       terminara de cubrir asomaba allí un pico ámbar con el borde curvo, y
-       parecía un fallo. Y el círculo acelera hacia el final en vez de frenar:
-       frenando, la última franja de la esquina se quedaba a la vista. */
-    const layerOpened = circleAt(coverRadius() * 0.7);
     const tl = gsap.timeline({ paused: true });
     layerEls.forEach((el, i) => {
-      tl.fromTo(el, { clipPath: closed }, { clipPath: layerOpened, duration: 0.6, ease: 'power2.in' }, i * 0.07);
+      tl.fromTo(el, { clipPath: closed }, { clipPath: opened, duration: 0.6, ease: appleOut }, i * 0.07);
     });
     const lastTime = layerEls.length ? (layerEls.length - 1) * 0.07 : 0;
     const panelInsertTime = lastTime + (layerEls.length ? 0.08 : 0);
-    const panelDuration = 0.6;
-    tl.fromTo(panel, { clipPath: closed }, { clipPath: opened, duration: panelDuration, ease: 'power2.in' }, panelInsertTime);
+    const panelDuration = 0.75;
+    tl.fromTo(panel, { clipPath: closed }, { clipPath: opened, duration: panelDuration, ease: appleOut }, panelInsertTime);
 
     if (itemEls.length) {
-      const itemsStart = panelInsertTime + panelDuration * 0.55;
+      const itemsStart = panelInsertTime + panelDuration * 0.15;
       tl.to(itemEls, { yPercent: 0, rotate: 0, ...CARTOON, stagger: { each: 0.1, from: 'start' } }, itemsStart);
     }
     if (socialTitle || socialLinks.length) {
-      const socialsStart = panelInsertTime + panelDuration * 0.75;
+      const socialsStart = panelInsertTime + panelDuration * 0.4;
       if (socialTitle) tl.to(socialTitle, { opacity: 1, duration: 0.5, ease: appleOut }, socialsStart);
       if (socialLinks.length) {
         tl.to(
@@ -180,7 +174,7 @@ export default function SiteMenu({ items, projectsHref, projects, languages, soc
     closeTweenRef.current = gsap.to([...layers(), panel], {
       clipPath: circleAt(0),
       duration: 0.4,
-      ease: 'power2.out',
+      ease: apple,
       stagger: { each: 0.05, from: 'end' },
       overwrite: 'auto',
       onComplete: () => {

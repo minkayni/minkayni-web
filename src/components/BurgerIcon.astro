@@ -11,12 +11,9 @@
 <svg id="menu-btn" class="cursor-pointer opacity-0 [html[data-js]_&]:opacity-100 scale-50 mt-2 origin-right" xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 200 200">
     <title>Menu</title>
     <g id="burger" fill="none" stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="10">
-        {/* Tres líneas rectas. Antes las de arriba y abajo eran trazos que
-            daban la vuelta por una curva hasta formar la X, y a mitad de
-            camino se veía un círculo («un borde redondeado»). Ahora giran. */}
-        <line class="bun bun-top" x1="50" y1="29" x2="150" y2="29"></line>
         <line class="patty" x1="50" y1="61" x2="150" y2="61"></line>
-        <line class="bun bun-bottom" x1="50" y1="94" x2="150" y2="94"></line>
+        <path class="buns" style="stroke-dasharray:100.355px,234.262px;stroke-dashoffset:0" d="M50,29h96c27,0,48-1,34,40-18.12,53.08-48.64,23.86-48.64,23.86L60.64,22.14"></path>
+        <path class="buns" style="stroke-dasharray:100.34px,234.226px;stroke-dashoffset:0" d="M50,94h96c27,0,48,1,34-40C161.88,1,131.36,30.17,131.36,30.17L60.64,100.88"></path>
     </g>
     <path
         class="letters"
@@ -33,8 +30,6 @@
 <script>
     import { gsap } from "../scripts/main.ts";
     import { apple } from "../scripts/easing";
-    import { prefersReducedMotion } from "../scripts/platform";
-    import { BOUNCY, CARTOON } from "../scripts/spring";
 
     /* El arranque mide las longitudes de los trazos (DrawSVG fuerza un
        layout) y en las máquinas de PageSpeed pasaba de los 50 ms: contaba
@@ -48,25 +43,15 @@
         const tl = gsap.timeline({ defaults: { ease: apple } });
 
         gsap.set("#menu-btn", { autoAlpha: 1 });
+        gsap.set(".buns", { drawSVG: "0% 30%" });
         gsap.set(".letters", { drawSVG: "53.5% 100%", x: -155 });
-        gsap.set([".bun", ".patty"], { transformOrigin: "50% 50%" });
 
-        /* La palabra «menu» ↔ «cerrar» se sigue escribiendo a mano. */
+        tl.to(".patty", { duration: 0.35, drawSVG: "50% 50%" }, 0);
+        tl.to(".patty", { duration: 0.1, opacity: 0, ease: "none" }, 0.25);
+        tl.to(".buns", { duration: 0.85, drawSVG: "69% 96.5%" }, 0);
         tl.to(".letters", { duration: 0.85, drawSVG: "0% 53%", x: 0 }, 0);
         // Estado inicial: cerrado (mostrar "menu")
         tl.reversed(true);
-
-        /* Hamburguesa ↔ X con resorte de caricatura: la línea del medio se
-           recoge y las otras dos van al centro y giran ±45°, pasándose un
-           poco antes de asentarse. Al volver, la del medio sale rebotando. */
-        const bars = (open: boolean) => {
-            const quiet = prefersReducedMotion();
-            const move = quiet ? { duration: 0 } : CARTOON;
-            gsap.to(".bun-top", { y: open ? 32.5 : 0, rotation: open ? 45 : 0, ...move, overwrite: "auto" });
-            gsap.to(".bun-bottom", { y: open ? -32.5 : 0, rotation: open ? -45 : 0, ...move, overwrite: "auto" });
-            if (open) gsap.to(".patty", { scaleX: 0, opacity: 0, duration: quiet ? 0 : 0.16, ease: "power2.in", overwrite: "auto" });
-            else gsap.to(".patty", { scaleX: 1, opacity: 1, ...(quiet ? { duration: 0 } : BOUNCY), delay: quiet ? 0 : 0.08, overwrite: "auto" });
-        };
 
         const btn = document.querySelector("#menu-btn");
 
@@ -77,7 +62,6 @@
         function setOpen(open: boolean) {
             // open = true (overlay visible) -> icono "close" (timeline hacia adelante)
             tl.reversed(!open);
-            bars(open);
         }
 
         // Leer estado inicial desde aria-expanded si está disponible
