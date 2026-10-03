@@ -39,6 +39,7 @@
 import { gsap } from "./main";
 import { appleOut } from "./easing";
 import { prefersReducedMotion } from "./platform";
+import { CARTOON } from "./spring";
 
 const ANIMATION = {
     duration: 1,
@@ -46,6 +47,19 @@ const ANIMATION = {
     scrollStart: "center bottom+=50%",
     scrollEnd: "bottom bottom-=40%",
     stagger: 0.03,
+} as const;
+
+/* Segunda capa, la del titular del proyecto destacado (Projects.astro), que
+   el usuario eligió como modelo: cada letra sube desde debajo de su línea con
+   el resorte de caricatura, en cascada, y se deshace al volver hacia arriba.
+   Allí sale desde el centro (bilateral); aquí, de izquierda a derecha. Se
+   dispara donde se dispara aquel: su sección cruza el 75 % de la pantalla y
+   el titular queda 112 px más abajo. Va en un <span> interior de cada letra
+   para no pisar el estirón de ScrollFloat, que mueve el exterior. */
+const SPRING_LAYER = {
+    yPercent: 120,
+    stagger: 0.02,
+    start: () => `top ${Math.round(window.innerHeight * 0.75 + 112)}px`,
 } as const;
 
 /** Distancia de sobra por debajo de la pantalla a la que ya se prepara un título. */
@@ -73,7 +87,10 @@ const splitTextNodes = (root: HTMLElement): HTMLElement[] => {
             for (const char of token) {
                 const span = document.createElement("span");
                 span.className = "inline-block";
-                span.textContent = char;
+                const inner = document.createElement("span");
+                inner.className = "sf-spring inline-block";
+                inner.textContent = char;
+                span.appendChild(inner);
                 word.appendChild(span);
                 chars.push(span);
             }
@@ -134,6 +151,22 @@ const enhance = (el: HTMLElement) => {
             },
         }
     );
+
+    /* El titular destacado ya trae su propia capa (desde el centro). */
+    if (el.closest("#featured-project")) return;
+    const springs = chars.map((c) => c.firstElementChild as HTMLElement);
+    gsap.from(springs, {
+        yPercent: SPRING_LAYER.yPercent,
+        opacity: 0,
+        ...CARTOON,
+        stagger: { each: SPRING_LAYER.stagger, from: "start" },
+        scrollTrigger: {
+            trigger: el,
+            start: SPRING_LAYER.start,
+            toggleActions: "play none none reverse",
+            invalidateOnRefresh: true,
+        },
+    });
 };
 
 const pendientes = () =>
