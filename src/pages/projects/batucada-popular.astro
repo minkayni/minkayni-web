@@ -240,7 +240,7 @@ const cartoKey = import.meta.env.PUBLIC_CARTO_KEY ?? "";
                             sectors.map((sector, index) => (
                                 <li>
                                     <button type="button" class="group relative flex w-full cursor-pointer items-center py-2 pl-[2.8rem] text-left font-bold text-white focus-visible:outline-[3px] focus-visible:outline-offset-4 focus-visible:outline-white" data-bp-sector>
-                                        <span class="absolute left-[0.3rem] top-1/2 aspect-square w-[1.9rem] -translate-y-1/2 rotate-45 border-2 border-black bg-bp-blue transition-[scale,background-color] duration-[180ms] ease-bp-rebound group-hover:scale-[1.15] group-hover:bg-accent group-data-[active]:scale-[1.15] group-data-[active]:bg-accent motion-reduce:transition-none" aria-hidden="true" />
+                                        <span class="absolute left-[0.3rem] top-1/2 aspect-square w-[1.9rem] -translate-y-1/2 rotate-45 border-2 border-black bg-bp-blue spring group-hover:scale-[1.15] group-hover:bg-accent group-data-[active]:scale-[1.15] group-data-[active]:bg-accent motion-reduce:transition-none" aria-hidden="true" />
                                         <span class="font-display absolute left-[0.3rem] top-1/2 grid w-[1.9rem] -translate-y-1/2 place-items-center text-[0.72rem] font-black text-black" aria-hidden="true">
                                             {String(index + 1).padStart(2, "0")}
                                         </span>
@@ -258,7 +258,7 @@ const cartoKey = import.meta.env.PUBLIC_CARTO_KEY ?? "";
                     <p id="bp-map-status" class="pointer-events-none absolute inset-x-0 bottom-3 z-[1] text-center text-[0.78rem] font-black uppercase tracking-[0.14em] text-black/70 peer-data-[state=ready]:hidden" data-bp-map-status role="status">{t("loading.map")}</p>
                     <button
                         type="button"
-                        class="absolute bottom-3 left-3 z-[2] hidden -rotate-1 cursor-pointer border-2 border-black bg-accent px-3 py-[0.45rem] text-[0.7rem] font-black uppercase tracking-[0.08em] text-black shadow-[3px_3px_0_rgba(10,8,1,0.6)] transition-transform duration-[180ms] ease-bp-rebound hover:-translate-y-[2px] focus-visible:outline-[3px] focus-visible:outline-offset-4 focus-visible:outline-white peer-data-[state=ready]:inline-flex motion-reduce:transition-none"
+                        class="absolute bottom-3 left-3 z-[2] hidden -rotate-1 cursor-pointer border-2 border-black bg-accent px-3 py-[0.45rem] text-[0.7rem] font-black uppercase tracking-[0.08em] text-black shadow-[3px_3px_0_rgba(10,8,1,0.6)] spring hover:-translate-y-[2px] focus-visible:outline-[3px] focus-visible:outline-offset-4 focus-visible:outline-white peer-data-[state=ready]:inline-flex motion-reduce:transition-none"
                         data-bp-map-reset>{t("batucada.mapReset", { count: sectors.length })}</button
                     >
                 </div>
@@ -280,7 +280,7 @@ const cartoKey = import.meta.env.PUBLIC_CARTO_KEY ?? "";
                     {
                         communityActions.map((action, index) => (
                             <li class="group grid grid-cols-[2.6rem_minmax(0,1fr)] items-center gap-[1.15rem] border-b-2 border-dashed border-black/55 py-[clamp(1.2rem,1.9vw,1.6rem)]">
-                                <span class="grid aspect-square w-[2.6rem] place-items-center border-2 border-black bg-bp-blue text-[0.9rem] font-black text-black transition-transform duration-[180ms] ease-bp-rebound group-hover:-rotate-[8deg] group-hover:scale-[1.08] motion-reduce:transition-none" aria-hidden="true">
+                                <span class="grid aspect-square w-[2.6rem] place-items-center border-2 border-black bg-bp-blue text-[0.9rem] font-black text-black spring group-hover:-rotate-[8deg] group-hover:scale-[1.08] motion-reduce:transition-none" aria-hidden="true">
                                     0{index + 1}
                                 </span>
                                 <p class="text-[clamp(1.15rem,1.8vw,1.7rem)] font-black">{action.text}</p>
@@ -296,7 +296,7 @@ const cartoKey = import.meta.env.PUBLIC_CARTO_KEY ?? "";
             <p class:list={[bp.eyebrow, "text-bp-blue"]} data-bp-hit>{d.ecoHeading.eyebrow}</p>
             <h2 data-scroll-float id="eco-title" class:list={[bp.h2, "max-w-[12ch]"]} data-bp-hit set:html={formatTitle(d.ecoHeading.title)} />
             <p class:list={[bp.body, "mt-7 max-w-[56ch]"]} data-bp-hit>{d.ecoHeading.body}</p>
-            <ul class="mt-[clamp(1.75rem,3.5vw,2.75rem)] flex flex-wrap gap-x-[1.1rem] gap-y-4" data-bp-clave>
+            <ul class="mt-[clamp(1.75rem,3.5vw,2.75rem)] flex flex-wrap gap-x-[1.1rem] gap-y-4" data-bp-clave data-jelly>
                 {
                     ecosystem.map((item, index) => (
                         <li class:list={["rounded-[3px_8px_4px_7px] border-2 px-4 py-[0.55rem] text-[0.85rem] font-black uppercase tracking-[0.08em]", index % 2 ? "rotate-[1deg] border-bp-blue text-bp-blue" : "-rotate-[1.2deg] border-white text-white"]}>{item.text}</li>

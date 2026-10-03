@@ -1,5 +1,5 @@
 import { gsap, ScrollTrigger, SplitText, waitForFontsReady } from "../main.ts";
-import { appleOut } from "../easing";
+import { CARTOON } from "../spring";
 
 /* La leyenda de la portada viene visible en el HTML y se pinta con el primer
    cuadro: en móvil es el elemento más grande de la primera pantalla —el LCP
@@ -59,7 +59,7 @@ export const animateParagraph = (prefersReduced: boolean, opts: Opciones = {}): 
         const tl = gsap.timeline({ paused: true, delay: opts.fromIntro ? 1 : 0 });
         sequence.forEach((el, i) => {
             const isCounter = counters.includes(el);
-            tl.to(el, { opacity: 1, y: 0, duration: 0.5, ease: appleOut, onStart: isCounter ? () => revealCounter(el) : undefined }, i * ST);
+            tl.to(el, { opacity: 1, y: 0, ...CARTOON, onStart: isCounter ? () => revealCounter(el) : undefined }, i * ST);
         });
 
         if (opts.fromIntro) {

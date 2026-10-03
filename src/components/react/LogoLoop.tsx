@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { SpringChain } from '../../scripts/spring';
 
 export type LogoItem =
   | {
@@ -30,6 +31,8 @@ export interface LogoLoopProps {
   fadeOut?: boolean;
   fadeOutColor?: string;
   scaleOnHover?: boolean;
+  /** Los logos se comportan como eslabones de una cadena al pasar el puntero. */
+  chain?: boolean;
   renderItem?: (item: LogoItem, key: React.Key) => React.ReactNode;
   ariaLabel?: string;
   className?: string;
@@ -194,6 +197,74 @@ const useAnimationLoop = (
   }, [targetVelocity, seqWidth, seqHeight, isHovered, hoverSpeed, isVertical]);
 };
 
+/* Cadena (añadido al LogoLoop de reactbits): cada logo cuelga de su sitio por
+   un resorte y está unido a sus vecinos por otro (SpringChain). El puntero
+   levanta el logo que tiene debajo y arrastra a los de al lado con retraso;
+   moverlo hace viajar la onda, y al salir la cadena cae y se balancea. Cada
+   logo gira según la pendiente de la cadena en su punto, como un eslabón. */
+const CHAIN_SPRING = { response: 0.6, bounce: 0.6, coupling: 3, grip: 12 } as const;
+
+const useChain = (
+  trackRef: React.RefObject<HTMLDivElement | null>,
+  enabled: boolean,
+  lift: number,
+  dependencies: React.DependencyList
+) => {
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!enabled || !track) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const items = Array.from(track.querySelectorAll<HTMLElement>(':scope > ul > li'));
+    if (!items.length) return;
+
+    const spacing = items.length > 1 ? Math.abs(items[1].offsetLeft - items[0].offsetLeft) || 200 : 200;
+    const last = items.length - 1;
+    const chain = new SpringChain(items.length, CHAIN_SPRING, y => {
+      for (let i = 0; i <= last; i++) {
+        const el = items[i];
+        const yi = y[i];
+        const slope = (y[Math.min(i + 1, last)] - y[Math.max(i - 1, 0)]) / (2 * spacing);
+        const rotate = Math.max(-12, Math.min(12, (Math.atan(slope) * 180) / Math.PI * 7));
+        el.style.translate = `0 ${yi.toFixed(2)}px`;
+        el.style.rotate = `${rotate.toFixed(2)}deg`;
+        el.style.scale = (1 + (Math.max(0, -yi) / lift) * 0.1).toFixed(4);
+      }
+    });
+
+    const nearest = (x: number) => {
+      let best = -1;
+      let distance = Infinity;
+      for (let i = 0; i <= last; i++) {
+        const r = items[i].getBoundingClientRect();
+        const d = Math.abs(r.left + r.width / 2 - x);
+        if (d < distance) {
+          distance = d;
+          best = i;
+        }
+      }
+      return best;
+    };
+    const onPointer = (e: PointerEvent) => chain.pull(nearest(e.clientX), -lift);
+    const onLeave = () => chain.release();
+    track.addEventListener('pointermove', onPointer);
+    track.addEventListener('pointerdown', onPointer);
+    track.addEventListener('pointerleave', onLeave);
+    track.addEventListener('pointercancel', onLeave);
+    return () => {
+      track.removeEventListener('pointermove', onPointer);
+      track.removeEventListener('pointerdown', onPointer);
+      track.removeEventListener('pointerleave', onLeave);
+      track.removeEventListener('pointercancel', onLeave);
+      chain.stop();
+      items.forEach(el => {
+        el.style.translate = '';
+        el.style.rotate = '';
+        el.style.scale = '';
+      });
+    };
+  }, dependencies);
+};
+
 export const LogoLoop = React.memo<LogoLoopProps>(
   ({
     logos,
@@ -207,6 +278,7 @@ export const LogoLoop = React.memo<LogoLoopProps>(
     fadeOut = false,
     fadeOutColor,
     scaleOnHover = false,
+    chain = false,
     renderItem,
     ariaLabel = 'Partner logos',
     className,
@@ -273,6 +345,8 @@ export const LogoLoop = React.memo<LogoLoopProps>(
 
     useAnimationLoop(trackRef, targetVelocity, seqWidth, seqHeight, isHovered, effectiveHoverSpeed, isVertical);
 
+    useChain(trackRef, chain && !isVertical, logoHeight * 0.3, [chain, isVertical, logoHeight, copyCount, logos]);
+
     const cssVariables = useMemo(
       () =>
         ({
@@ -331,7 +405,7 @@ export const LogoLoop = React.memo<LogoLoopProps>(
               'inline-flex items-center',
               'motion-reduce:transition-none',
               scaleOnHover &&
-                'transition-transform duration-300 ease-apple group-hover/item:scale-120'
+                'spring group-hover/item:scale-120'
             )}
             aria-hidden={!!(item as any).href && !(item as any).ariaLabel}
           >
@@ -345,7 +419,7 @@ export const LogoLoop = React.memo<LogoLoopProps>(
               '[image-rendering:-webkit-optimize-contrast]',
               'motion-reduce:transition-none',
               scaleOnHover &&
-                'transition-transform duration-300 ease-apple group-hover/item:scale-120'
+                'spring group-hover/item:scale-120'
             )}
             src={(item as any).src}
             srcSet={(item as any).srcSet}

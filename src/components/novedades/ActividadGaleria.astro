@@ -33,7 +33,7 @@ const t = useTranslations(locale);
                         aria-label={t("viewer.open", { index: indice + 1, count: fotos.length })}
                     >
                         <img
-                            class="aspect-square w-full bg-black/5 object-cover transition duration-300 hover:scale-[1.03] motion-reduce:transition-none motion-reduce:hover:scale-100"
+                            class="aspect-square w-full bg-black/5 object-cover spring hover:scale-[1.03] motion-reduce:transition-none motion-reduce:hover:scale-100"
                             src={foto.thumb}
                             width={foto.width ?? 600}
                             height={foto.height ?? 600}

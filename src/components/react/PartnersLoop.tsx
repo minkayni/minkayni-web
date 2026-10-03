@@ -32,6 +32,7 @@ export default function PartnersLoop({ logos, ariaLabel }: Props) {
       logoHeight={desktop ? 84 : 56}
       gap={desktop ? 72 : 44}
       pauseOnHover
+      chain
       fadeOut
       fadeOutColor="#FFF6E5"
       ariaLabel={ariaLabel}

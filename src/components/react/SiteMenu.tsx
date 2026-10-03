@@ -22,6 +22,7 @@
 import { type ReactElement, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { apple, appleOut } from "../../scripts/easing";
+import { CARTOON } from "../../scripts/spring";
 import type { MenuData } from './menu-types';
 
 /* Círculo de recorte centrado en la hamburguesa (o en la esquina superior
@@ -133,7 +134,7 @@ export default function SiteMenu({ items, projectsHref, projects, languages, soc
 
     if (itemEls.length) {
       const itemsStart = panelInsertTime + panelDuration * 0.15;
-      tl.to(itemEls, { yPercent: 0, rotate: 0, duration: 1, ease: appleOut, stagger: { each: 0.1, from: 'start' } }, itemsStart);
+      tl.to(itemEls, { yPercent: 0, rotate: 0, ...CARTOON, stagger: { each: 0.1, from: 'start' } }, itemsStart);
     }
     if (socialTitle || socialLinks.length) {
       const socialsStart = panelInsertTime + panelDuration * 0.4;
@@ -141,7 +142,7 @@ export default function SiteMenu({ items, projectsHref, projects, languages, soc
       if (socialLinks.length) {
         tl.to(
           socialLinks,
-          { y: 0, opacity: 1, duration: 0.55, ease: appleOut, stagger: { each: 0.08, from: 'start' }, onComplete: () => gsap.set(socialLinks, { clearProps: 'opacity' }) },
+          { y: 0, opacity: 1, ...CARTOON, stagger: { each: 0.08, from: 'start' }, onComplete: () => gsap.set(socialLinks, { clearProps: 'opacity' }) },
           socialsStart + 0.04
         );
       }
@@ -235,6 +236,77 @@ export default function SiteMenu({ items, projectsHref, projects, languages, soc
     };
   }, [open, setState]);
 
+  /* Con el panel abierto: las redes responden en cadena y las letras de cada
+     ítem saltan una tras otra desde la que toca el puntero (o todas, con el
+     teclado). Las letras se parten al primer paso y se recomponen al cerrar,
+     para no dejar el DOM de React troceado. El recorte vertical del
+     envoltorio solo hace falta para la entrada: se quita en el ítem que salta
+     y vuelve al cerrar. */
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!open || !panel) return;
+    /* Importación dinámica: cartoon.ts arrastra main.ts (GSAP y su arranque
+       de página), que no puede evaluarse al renderizar la isla en el servidor. */
+    let cartoon: typeof import('../../scripts/cartoon') | null = null;
+    let cancelled = false;
+    import('../../scripts/cartoon').then(mod => {
+      if (cancelled) return;
+      cartoon = mod;
+      mod.bindChain(panel.querySelector<HTMLElement>('.sm-socials-list'));
+    });
+    const chains = new Map<HTMLElement, { play: (from?: number | 'start' | 'center') => void; revert: () => void }>();
+    const unclipped: HTMLElement[] = [];
+    const chainFor = (item: HTMLElement) => {
+      /* Solo el texto: SplitText reescribe el contenido al recomponer, y la
+         flecha de «Proyectos» es un nodo que React sigue actualizando. */
+      const label = item.querySelector<HTMLElement>('.sm-panel-itemText');
+      if (!label) return null;
+      let chain = chains.get(label);
+      if (!chain) {
+        const made = cartoon?.letterChain(label, item);
+        if (!made) return null;
+        chain = made;
+        chains.set(label, chain);
+      }
+      const wrap = item.closest<HTMLElement>('.sm-panel-itemWrap');
+      if (wrap && !unclipped.includes(wrap)) {
+        wrap.style.clipPath = 'none';
+        unclipped.push(wrap);
+      }
+      return chain;
+    };
+    const onOver = (event: PointerEvent) => {
+      if (event.pointerType === 'touch' || busyRef.current) return;
+      const item = (event.target as Element).closest<HTMLElement>('.sm-panel-item');
+      if (!item || item.contains(event.relatedTarget as Node)) return;
+      const chain = chainFor(item);
+      if (!chain) return;
+      const chars = Array.from(item.querySelectorAll('.cartoon-char'));
+      const near = chars.reduce(
+        (best, c, i) => {
+          const r = c.getBoundingClientRect();
+          const d = Math.abs(r.left + r.width / 2 - event.clientX);
+          return d < best.d ? { i, d } : best;
+        },
+        { i: 0, d: Infinity }
+      );
+      chain.play(near.i);
+    };
+    const onFocus = (event: FocusEvent) => {
+      const item = (event.target as Element).closest<HTMLElement>('.sm-panel-item');
+      if (item?.matches(':focus-visible')) chainFor(item)?.play('start');
+    };
+    panel.addEventListener('pointerover', onOver);
+    panel.addEventListener('focusin', onFocus);
+    return () => {
+      cancelled = true;
+      panel.removeEventListener('pointerover', onOver);
+      panel.removeEventListener('focusin', onFocus);
+      chains.forEach(chain => chain.revert());
+      unclipped.forEach(wrap => (wrap.style.clipPath = ''));
+    };
+  }, [open]);
+
   /* Acordeón de proyectos: mismo lenguaje que los ítems del panel, a escala. */
   const toggleProjects = useCallback(() => {
     const list = projectsListRef.current;
@@ -244,7 +316,7 @@ export default function SiteMenu({ items, projectsHref, projects, languages, soc
     const labelEls = list.querySelectorAll<HTMLElement>('.sm-sub-itemLabel');
     if (next) {
       gsap.fromTo(list, { height: 0 }, { height: 'auto', duration: 0.5, ease: appleOut, clearProps: 'height' });
-      gsap.fromTo(labelEls, { yPercent: 120, rotate: 6, opacity: 0 }, { yPercent: 0, rotate: 0, opacity: 1, duration: 0.7, ease: appleOut, stagger: { each: 0.05, from: 'start' } });
+      gsap.fromTo(labelEls, { yPercent: 120, rotate: 6, opacity: 0 }, { yPercent: 0, rotate: 0, opacity: 1, ...CARTOON, stagger: { each: 0.05, from: 'start' } });
     } else {
       gsap.to(list, { height: 0, duration: 0.3, ease: apple });
     }
@@ -294,8 +366,8 @@ export default function SiteMenu({ items, projectsHref, projects, languages, soc
                       onClick={toggleProjects}
                     >
                       <span className="sm-panel-itemLabel inline-block [transform-origin:50%_100%] will-change-transform">
-                        {it.label}
-                        <svg aria-hidden="true" width="0.55em" height="0.55em" viewBox="0 0 10 10" className={`ml-3 inline-block align-middle transition-transform duration-300 ${projectsOpen ? 'rotate-180' : ''}`}>
+                        <span className="sm-panel-itemText">{it.label}</span>
+                        <svg aria-hidden="true" width="0.55em" height="0.55em" viewBox="0 0 10 10" className={`ml-3 inline-block align-middle spring ${projectsOpen ? 'rotate-180' : ''}`}>
                           <path d="M1 3l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       </span>
@@ -320,7 +392,9 @@ export default function SiteMenu({ items, projectsHref, projects, languages, soc
                   </>
                 ) : (
                   <a className={`${itemClass} ${it.current ? 'opacity-50' : ''}`} href={it.href} aria-current={it.current ? 'page' : undefined}>
-                    <span className="sm-panel-itemLabel inline-block [transform-origin:50%_100%] will-change-transform">{it.label}</span>
+                    <span className="sm-panel-itemLabel inline-block [transform-origin:50%_100%] will-change-transform">
+                      <span className="sm-panel-itemText">{it.label}</span>
+                    </span>
                   </a>
                 )}
               </li>
@@ -339,7 +413,7 @@ export default function SiteMenu({ items, projectsHref, projects, languages, soc
                       rel="noopener noreferrer"
                       aria-label={s.label}
                       title={s.label}
-                      className="sm-socials-link inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-[var(--bg-white)] transition-[background-color,color,transform] duration-300 hover:-translate-y-0.5 hover:bg-accent hover:text-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                      className="sm-socials-link inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-[var(--bg-white)] spring press hover:-translate-y-0.5 hover:bg-accent hover:text-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                     >
                       {socialIcon(s.label) ?? <span className="text-[0.7rem] font-bold uppercase">{s.label.slice(0, 2)}</span>}
                     </a>

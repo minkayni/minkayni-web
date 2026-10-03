@@ -81,7 +81,7 @@ const items = posts
                             {video || image ? (
                                 video ? (
                                     <video
-                                        class="media object-cover w-full h-full absolute inset-0 -z-10 pointer-events-none transition-transform duration-300 transform-gpu origin-center group-hover:scale-105"
+                                        class="media object-cover w-full h-full absolute inset-0 -z-10 pointer-events-none spring transform-gpu origin-center group-hover:scale-105"
                                         data-src={strapiMediaUrl(video.url, STRAPI_URL)}
                                         data-type={videoType}
                                         data-lcp-poster={posterUrl || undefined}
@@ -96,7 +96,7 @@ const items = posts
                                     />
                                 ) : (
                                     <img
-                                        class="media object-cover w-full h-full absolute inset-0 -z-10 transition-transform duration-300 transform-gpu origin-center group-hover:scale-105"
+                                        class="media object-cover w-full h-full absolute inset-0 -z-10 spring transform-gpu origin-center group-hover:scale-105"
                                         src={PIXEL}
                                         data-lcp-src={mediaUrl}
                                         data-lcp-srcset={mediaSrcSet || undefined}

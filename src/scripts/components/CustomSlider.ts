@@ -1,6 +1,7 @@
 import { gsap, ScrollTrigger } from "../../scripts/main";
 import { apple, appleOut } from "../easing";
-import { isIOS, isMobileViewport as isMobile } from "../platform";
+import { isIOS, isMobileViewport as isMobile, prefersReducedMotion } from "../platform";
+import { BOUNCY, CARTOON, rubberband, springTween, VelocityTracker } from "../spring";
 
 /* El estado vive en el propio elemento (no en el módulo) para que sobreviva a
    una segunda ejecución del script: `init` es la guarda anti-doble-init. Un
@@ -100,7 +101,7 @@ const readState = (el: HTMLElement): SliderState =>
         const show = (el: HTMLElement, txt?: string, inst?: boolean) => {
             cur = txt || "";
             el.textContent = cur;
-            inst ? gsap.set(el, { opacity: 1, y: 0 }) : gsap.to(el, { opacity: 1, y: 0, duration: 0.18, ease: appleOut });
+            inst ? gsap.set(el, { opacity: 1, y: 0 }) : gsap.to(el, { opacity: 1, y: 0, ...BOUNCY });
         };
         return {
             mount(init?: string, samples: (string | undefined)[] = []) {
@@ -115,17 +116,11 @@ const readState = (el: HTMLElement): SliderState =>
                 gsap.set(b, { opacity: 0, y: 8 });
                 b.textContent = n;
                 gsap.to(a, { opacity: 0, y: -6, duration: 0.1, ease: appleOut });
-                gsap.to(b, {
-                    opacity: 1,
-                    y: 0,
-                    duration: 0.16,
-                    ease: appleOut,
-                    onComplete: () => {
-                        [a, b] = [b, a];
-                        gsap.set(b, { opacity: 0, y: 8 });
-                        cur = n;
-                    },
-                });
+                gsap.to(b, { opacity: 1, y: 0, ...BOUNCY });
+                /* El relevo se apunta ya, no al acabar: el resorte dura casi un
+                   segundo y un cambio rápido de carta mataría su onComplete. */
+                [a, b] = [b, a];
+                cur = n;
             },
             remount(samples: (string | undefined)[]) {
                 wrap.style.height = measure(samples) + "px";
@@ -171,11 +166,20 @@ const readState = (el: HTMLElement): SliderState =>
                 },
             });
         gsap.set(next, { pointerEvents: "auto" });
-        gsap.to(next, { opacity: 1, y: 0, duration: 0.16, ease: appleOut });
+        gsap.to(next, { opacity: 1, y: 0, ...BOUNCY });
         aboutCurrent = i;
     };
 
     let currentIndex = -1;
+    /* El punto activo se estira hacia donde viene la carta, como una gota que
+       se suelta del anterior, y se recoge con rebote; el que deja de estar
+       activo encoge un pelo y vuelve. */
+    const stretchDot = (from: HTMLElement | undefined, to: HTMLElement | undefined, dir: 1 | -1) => {
+        if (!to || prefersReducedMotion()) return;
+        gsap.fromTo(to, { scaleX: 2.2, scaleY: 0.8, transformOrigin: dir > 0 ? "100% 50%" : "0% 50%" }, { scaleX: 1, scaleY: 1, ...BOUNCY, overwrite: "auto" });
+        if (from && from !== to) gsap.fromTo(from, { scaleX: 1.3, transformOrigin: dir > 0 ? "0% 50%" : "100% 50%" }, { scaleX: 1, ...BOUNCY, overwrite: "auto" });
+    };
+
     const setActive = (i: number) => {
         if (i === currentIndex) return;
         const el = cards[i];
@@ -184,6 +188,7 @@ const readState = (el: HTMLElement): SliderState =>
         nameSw?.swap(el.dataset.name || "");
         roleSw?.swap(el.dataset.role || "");
         dots.forEach((d, k) => d.classList.toggle("is-active", k === i));
+        stretchDot(dots[currentIndex], dots[i], i > currentIndex ? 1 : -1);
         showAbout(i);
         currentIndex = i;
     };
@@ -275,7 +280,7 @@ const readState = (el: HTMLElement): SliderState =>
                     }
                 },
             });
-            introTl.to(cards, { opacity: 1, duration: 0.6, stagger: 0.1, ease: appleOut }).addLabel("cardsDone").to(textEls, { opacity: 1, y: 0, duration: 0.45, ease: appleOut, stagger: 0.08 }, "cardsDone+=0.1").to(dots, { opacity: 1, duration: 0.4, ease: appleOut, stagger: 0.04 }, "cardsDone+=0.05");
+            introTl.to(cards, { opacity: 1, duration: 0.6, stagger: 0.1, ease: appleOut }).addLabel("cardsDone").to(textEls, { opacity: 1, y: 0, ...CARTOON, stagger: 0.08 }, "cardsDone+=0.1").to(dots, { opacity: 1, duration: 0.4, ease: appleOut, stagger: 0.04 }, "cardsDone+=0.05");
             state.isDesktop = true;
             ScrollTrigger.create({
                 trigger: section,
@@ -335,12 +340,19 @@ const readState = (el: HTMLElement): SliderState =>
             gsap.set(c, { rotation: 0, x: 0, y: 0, scale: 1, zIndex: 300 - i, transformOrigin: "50% 60%", boxShadow: "0 10px 30px rgba(0,0,0,0.12)", opacity: 0 });
         });
         const ordered = () => [...cards].sort((a, b) => Number(a.dataset.order || 0) - Number(b.dataset.order || 0));
-        const relayout = (animate = true) =>
+        /* Recolocar el mazo con resorte. La carta que venía del dedo hereda su
+           velocidad en x (`thrown`): sale disparada en la dirección del gesto
+           y se posa con un rebote proporcional a la fuerza del lanzamiento. */
+        const relayout = (animate = true, thrown?: { card: HTMLElement; velocity: number }) =>
             ordered().forEach((c, i) => {
                 const rot = +c.dataset.rot!;
                 const jx = +c.dataset.jx!;
                 const props = { x: jx, y: i * SPACING_Y, scale: 1 - i * DECAY, zIndex: 300 - i, rotation: rot };
-                animate ? gsap.to(c, { ...props, duration: 0.3, ease: appleOut }) : gsap.set(c, props);
+                if (!animate) return void gsap.set(c, props);
+                const { x, ...rest } = props;
+                const handoff = thrown?.card === c ? { velocity: thrown.velocity, distance: x - (gsap.getProperty(c, "x") as number) } : undefined;
+                gsap.to(c, { ...rest, ...springTween("snappy"), overwrite: "auto" });
+                gsap.to(c, { x, ...springTween("snappy", handoff) });
             });
         const bringFront = (card: HTMLElement) => {
             const list = ordered(),
@@ -352,13 +364,13 @@ const readState = (el: HTMLElement): SliderState =>
         };
         let isAnimating = false,
             isEntering = true;
-        const rotate = (dir: 1 | -1) => {
+        const rotate = (dir: 1 | -1, thrown?: { card: HTMLElement; velocity: number }) => {
             if (isAnimating) return;
             const list = ordered();
             if (list.length <= 1) return;
             isAnimating = true;
             (dir === 1 ? [...list.slice(1), list[0]] : [list.at(-1)!, ...list.slice(0, -1)]).forEach((c, i) => (c.dataset.order = String(i)));
-            relayout(true);
+            relayout(true, thrown);
             const top = ordered()[0];
             if (top) setActive(+top.dataset.idx!);
             setTimeout(() => (isAnimating = false), 340);
@@ -366,38 +378,38 @@ const readState = (el: HTMLElement): SliderState =>
         let dragging: HTMLElement | null = null,
             startX = 0,
             initialIdx = startIdx,
-            activePreview: "next" | "prev" | null = null,
-            vX = 0,
-            lastX = 0,
-            lastT = 0;
+            activePreview: "next" | "prev" | null = null;
+        const tracker = new VelocityTracker();
         const pointerDown = (e: PointerEvent) => {
             if (isAnimating || isEntering) return;
             const list = ordered();
             const top = list[0];
             if (!(e.target instanceof Element) || !top.contains(e.target)) return;
             dragging = top;
-            startX = lastX = e.clientX;
-            lastT = performance.now();
-            vX = 0;
+            startX = e.clientX;
+            tracker.reset();
+            tracker.add(e.clientX, 0);
+            gsap.killTweensOf(top, "x,rotation");
             initialIdx = +top.dataset.idx!;
             activePreview = null;
             dragging.setPointerCapture(e.pointerId);
-            gsap.to(dragging, { scale: 0.985, duration: 0.18, ease: appleOut });
+            gsap.to(dragging, { scale: 0.985, duration: 0.12, ease: appleOut });
         };
         const pointerMove = (e: PointerEvent) => {
             if (isAnimating || !dragging) return;
-            const dx = e.clientX - startX,
-                now = performance.now(),
-                dt = now - lastT || 16;
-            vX = (e.clientX - lastX) / dt;
-            lastX = e.clientX;
-            lastT = now;
+            const dx = e.clientX - startX;
+            tracker.add(e.clientX, 0);
             const list = ordered(),
                 single = list.length === 1,
                 eff = single && dx > 0 ? 0 : dx,
                 next = list[1],
                 prev = list.at(-1)!,
                 ratio = (val: number) => gsap.utils.clamp(0, 1, Math.abs(val) / PREVIEW_FULL);
+            /* La carta sigue al dedo 1:1 y gira un poco hacia donde va. Con una
+               sola carta no hay adónde ir: resiste como una goma (rubber-band). */
+            const w = dragging.offsetWidth || 300;
+            const follow = single ? rubberband(dx, w) : dx;
+            gsap.set(dragging, { x: +dragging.dataset.jx! + follow, rotation: +dragging.dataset.rot! + follow * 0.03 });
             if (eff > PREVIEW_MIN && next) {
                 const rN = ratio(eff);
                 gsap.to(next, { y: -10 * rN, scale: 1 - 0.02 * (1 - rN), duration: 0.18, overwrite: "auto" });
@@ -407,7 +419,7 @@ const readState = (el: HTMLElement): SliderState =>
                     vib(8);
                 }
             } else if (eff < PREVIEW_MIN && activePreview === "next") {
-                next && gsap.to(next, { y: SPACING_Y, scale: 1 - DECAY, duration: 0.25, ease: appleOut });
+                next && gsap.to(next, { y: SPACING_Y, scale: 1 - DECAY, ...BOUNCY });
                 setActive(initialIdx);
                 activePreview = null;
             }
@@ -420,42 +432,55 @@ const readState = (el: HTMLElement): SliderState =>
                     vib(8);
                 }
             } else if (eff > -PREVIEW_MIN && activePreview === "prev") {
-                prev && gsap.to(prev, { y: (list.length - 1) * SPACING_Y, scale: 1 - (list.length - 1) * DECAY, duration: 0.18, ease: appleOut });
+                prev && gsap.to(prev, { y: (list.length - 1) * SPACING_Y, scale: 1 - (list.length - 1) * DECAY, ...BOUNCY });
                 setActive(initialIdx);
                 activePreview = null;
             }
         };
         const pointerUp = (e: PointerEvent) => {
             if (!dragging) return;
+            /* pointercancel llega con clientX = 0 (el navegador se quedó el gesto:
+               scroll vertical o arrastre nativo). Leerlo como posición daba un
+               deslizamiento enorme a la izquierda y cambiaba de carta sola. */
+            const cancelled = e.type === "pointercancel";
             if (isAnimating) {
                 dragging.releasePointerCapture(e.pointerId);
                 dragging = null;
                 return;
             }
             const dx = e.clientX - startX,
-                flickR = vX > FLICK_VX && dx > 20,
-                flickL = vX < -FLICK_VX && dx < -20,
-                list = ordered();
-            if (list.length > 1 && (dx > SWIPE_DX || flickR)) {
-                rotate(1);
+                vX = tracker.velocity().x,
+                flickR = vX / 1000 > FLICK_VX && dx > 20,
+                flickL = vX / 1000 < -FLICK_VX && dx < -20,
+                list = ordered(),
+                thrown = { card: dragging, velocity: vX };
+            if (!cancelled && list.length > 1 && (dx > SWIPE_DX || flickR)) {
+                rotate(1, thrown);
                 vib(10);
-            } else if (list.length > 1 && (dx < -SWIPE_DX || flickL)) {
-                rotate(-1);
+            } else if (!cancelled && list.length > 1 && (dx < -SWIPE_DX || flickL)) {
+                rotate(-1, thrown);
                 vib(10);
             } else {
-                gsap.to(dragging, { scale: 1, duration: 0.22, ease: appleOut });
+                /* No llegó a cambiar: vuelve a su sitio con la velocidad que traía. */
+                const home = +dragging.dataset.jx!;
+                const from = gsap.getProperty(dragging, "x") as number;
+                gsap.to(dragging, { scale: 1, rotation: +dragging.dataset.rot!, ...springTween("press") });
+                gsap.to(dragging, { x: home, ...springTween("bouncy", { velocity: cancelled ? 0 : vX, distance: home - from }) });
                 if (activePreview) {
                     setActive(initialIdx);
                     activePreview = null;
                 }
                 const next = list[1],
                     prev = list.at(-1)!;
-                next && gsap.to(next, { y: SPACING_Y, scale: 1 - DECAY, duration: 0.18, ease: appleOut });
-                if (list.length > 1) prev && gsap.to(prev, { y: (list.length - 1) * SPACING_Y, scale: 1 - (list.length - 1) * DECAY, duration: 0.18, ease: appleOut });
+                next && gsap.to(next, { y: SPACING_Y, scale: 1 - DECAY, ...BOUNCY });
+                if (list.length > 1) prev && gsap.to(prev, { y: (list.length - 1) * SPACING_Y, scale: 1 - (list.length - 1) * DECAY, ...BOUNCY });
             }
             dragging.releasePointerCapture(e.pointerId);
             dragging = null;
         };
+        /* La foto de la carta es un <img>: sin esto, arrastrarla con ratón
+           inicia el arrastre nativo de imágenes y el navegador cancela el gesto. */
+        section.addEventListener("dragstart", (e) => e.preventDefault());
         section.addEventListener("pointerdown", pointerDown);
         section.addEventListener("pointermove", pointerMove);
         section.addEventListener("pointerup", pointerUp);
@@ -487,13 +512,13 @@ const readState = (el: HTMLElement): SliderState =>
                 state.mobileIntroPlaying = true;
                 isEntering = true;
                 gsap.to(seq, { opacity: 1, duration: 0.4, ease: appleOut });
-                gsap.to(uiEls, { opacity: 1, y: 0, duration: 0.45, ease: appleOut, delay: 0.05, stagger: 0.06 });
+                gsap.to(uiEls, { opacity: 1, y: 0, ...CARTOON, delay: 0.05, stagger: 0.06 });
                 gsap.delayedCall(1, () => {
                     const list = ordered();
                     list.forEach((c, i) => {
                         const rot = +c.dataset.rot!,
                             jx = +c.dataset.jx!;
-                        gsap.fromTo(c, { x: jx * 0.2, y: 0, rotation: rot * 0.3, scale: 1 }, { x: jx, y: i * 14, rotation: rot, scale: 1 - i * 0.012, duration: 0.7, ease: appleOut, stagger: 1 });
+                        gsap.fromTo(c, { x: jx * 0.2, y: 0, rotation: rot * 0.3, scale: 1 }, { x: jx, y: i * 14, rotation: rot, scale: 1 - i * 0.012, ...CARTOON, stagger: 1 });
                     });
                     gsap.delayedCall(0.2, () => {
                         isEntering = false;

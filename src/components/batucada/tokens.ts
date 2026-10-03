@@ -44,14 +44,14 @@ export const bp = {
         "bg-primary text-white [background-image:url(/batucada/grunge-soft.webp),var(--bp-noise)] [background-size:cover,auto] [background-position:right_center,left_top] [background-blend-mode:multiply,soft-light]",
 
     /* botón sello: golpea y deja su eco como sombra dura */
-    button: "min-h-12 inline-flex items-center justify-center px-6 py-[0.9rem] border-[3px] border-black rounded-[3px_7px_4px_6px] font-black uppercase tracking-[0.04em] transition-[transform,box-shadow] duration-[180ms] ease-bp-rebound hover:-translate-x-[3px] hover:-translate-y-[3px] hover:-rotate-[0.5deg] focus-visible:outline-[3px] focus-visible:outline-offset-4 motion-reduce:transition-none motion-reduce:hover:translate-x-0 motion-reduce:hover:translate-y-0 motion-reduce:hover:rotate-0 motion-reduce:hover:shadow-none motion-reduce:hover:underline",
+    button: "min-h-12 inline-flex items-center justify-center px-6 py-[0.9rem] border-[3px] border-black rounded-[3px_7px_4px_6px] font-black uppercase tracking-[0.04em] spring hover:-translate-x-[3px] hover:-translate-y-[3px] hover:-rotate-[0.5deg] focus-visible:outline-[3px] focus-visible:outline-offset-4 motion-reduce:transition-none motion-reduce:hover:translate-x-0 motion-reduce:hover:translate-y-0 motion-reduce:hover:rotate-0 motion-reduce:hover:shadow-none motion-reduce:hover:underline",
     buttonYellow: "bg-accent text-black hover:shadow-[5px_5px_0_var(--bg-black)]",
     buttonInk: "bg-black text-white hover:shadow-[5px_5px_0_var(--bg-white)]",
 
     textLink:
         "group min-h-11 inline-flex items-center gap-[0.6rem] border-b-2 border-current text-current font-black focus-visible:outline-[3px] focus-visible:outline-offset-4",
     textLinkArrow:
-        "text-[1.35em] transition-transform duration-[180ms] ease-bp-rebound group-hover:translate-x-[0.2rem] group-hover:translate-y-[0.2rem] motion-reduce:transition-none",
+        "text-[1.35em] spring group-hover:translate-x-[0.2rem] group-hover:translate-y-[0.2rem] motion-reduce:transition-none",
 
     /* marco de foto y su eco (la placa desplazada vive como span real) */
     visual: "relative mr-[clamp(0.75rem,1.5vw,1.25rem)] mb-[clamp(0.75rem,1.5vw,1.25rem)]",

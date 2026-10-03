@@ -1,5 +1,5 @@
 import { gsap, Draggable, InertiaPlugin } from "../../scripts/main";
-import { apple } from "../../scripts/easing";
+import { BOUNCY, CARTOON, SMOOTH, springTween } from "../../scripts/spring";
 import { isMobileViewport, prefersReducedMotion } from "../../scripts/platform";
 import { onWidthResize } from "../../scripts/viewport";
 
@@ -40,16 +40,76 @@ export const init = () => {
     };
 
     let loop: HorizontalLoopTimeline = buildLoop();
+    /* Mientras caen las tarjetas de la entrada (más abajo), la cinta espera. */
+    let cascading = false;
     /* Con menos movimiento la cinta no avanza sola; arrastre y clic siguen. */
     const playLoop = () => {
-        if (!prefersReducedMotion()) loop.play();
+        if (!prefersReducedMotion() && !cascading) loop.play();
+    };
+
+    /* ── Entrada en cascada ──────────────────────────────────────────────
+       La primera vez que la cinta entra en pantalla, las tarjetas visibles
+       caen desde arriba una tras otra, de izquierda a derecha, giradas como
+       cartas lanzadas; al tocar su sitio rebotan (resorte de caricatura) y se
+       aplastan un instante contra el suelo. La foto de dentro se asienta con
+       un zoom sin rebote (llena su marco) y, al final, la cinta arranca
+       acelerando desde parada en vez de moverse de golpe.
+       Solo `yPercent`, `rotation` y `scaleY`: el bucle mide con `xPercent` y
+       `scaleX`, que no se tocan. Sin JS, con movimiento reducido o si la
+       cinta ya se ve al cargar, no se oculta nada. */
+    const cascade = !prefersReducedMotion() && wrapperEl.getBoundingClientRect().top > window.innerHeight;
+    let entered = !cascade;
+    if (cascade) gsap.set(boxes, { yPercent: -80, opacity: 0, rotation: (i: number) => (i % 2 ? 1 : -1) * (8 + (i % 3) * 3), transformOrigin: "50% 100%" });
+
+    const showAll = () => gsap.set(boxes, { yPercent: 0, opacity: 1, rotation: 0, scaleY: 1 });
+
+    const runCascade = () => {
+        entered = true;
+        cascading = true;
+        const vw = window.innerWidth;
+        const ordered = [...boxes].sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left);
+        const onScreen = ordered.filter((b) => {
+            const r = b.getBoundingClientRect();
+            return r.right > 0 && r.left < vw;
+        });
+        gsap.set(ordered.filter((b) => !onScreen.includes(b)), { yPercent: 0, opacity: 1, rotation: 0 });
+
+        const STEP = 0.09;
+        const tl = gsap.timeline();
+        onScreen.forEach((card, i) => {
+            const at = i * STEP;
+            tl.to(card, { yPercent: 0, rotation: 0, ...CARTOON }, at)
+                .to(card, { opacity: 1, duration: 0.2, ease: "none" }, at)
+                /* Primer contacto con el suelo, hacia el 18 % del resorte. */
+                .fromTo(card, { scaleY: 0.86 }, { scaleY: 1, ...BOUNCY, immediateRender: false }, at + CARTOON.duration * 0.18);
+            const media = card.querySelector(".media");
+            if (media) tl.fromTo(media, { scale: 1.3 }, { scale: 1, ...SMOOTH, clearProps: "transform" }, at);
+        });
+
+        /* La cinta arranca cuando cae la última, acelerando desde cero. */
+        tl.add(() => {
+            cascading = false;
+            if (!isInView || document.hidden || prefersReducedMotion()) return;
+            loop.timeScale(0);
+            playLoop();
+            gsap.to(loop, { timeScale: 1, duration: 1.4, ease: "sine.inOut" });
+        }, onScreen.length * STEP + 0.35);
+
+        /* Red de seguridad: si el reloj de GSAP no avanzara, nada se queda oculto. */
+        window.setTimeout(() => {
+            if (tl.progress() < 1) {
+                cascading = false;
+                showAll();
+            }
+        }, 5000);
     };
 
     // Control por viewport: pausa/reanuda al entrar/salir
     let isInView = false;
     const onEnterView = () => {
         isInView = true;
-        playLoop();
+        if (!entered) runCascade();
+        else playLoop();
         reordenarVideos();
     };
     const onExitView = () => {
@@ -213,7 +273,7 @@ export const init = () => {
     wrapperEl.addEventListener("pointerleave", onHoverLeave);
 
     // Click en cada caja: centrar ese box (toIndex directo)
-    boxes.forEach((box, i) => box.addEventListener("click", () => loop.toIndex(i, { duration: 0.8, ease: apple })));
+    boxes.forEach((box, i) => box.addEventListener("click", () => loop.toIndex(i, springTween("snappy"))));
 
     /* Solo un cambio de ancho reconstruye la cinta: la barra de direcciones
        del móvil también dispara `resize` y devolvía el carrusel al inicio. */

@@ -77,7 +77,7 @@ const hasImage = (project: ProjectItem) => Boolean(project.image?.url || project
                 filters.map((filter, index) => (
                     <button
                         type="button"
-                        class="project-filter min-h-11 rounded-full border border-black/15 px-4 py-2 text-sm font-bold transition hover:border-primary hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary aria-pressed:bg-primary aria-pressed:text-white"
+                        class="project-filter min-h-11 rounded-full border border-black/15 px-4 py-2 text-sm font-bold spring hover:border-primary hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary aria-pressed:bg-primary aria-pressed:text-white"
                         data-project-filter={filter.meta ?? "all"}
                         aria-pressed={index === 0 ? "true" : "false"}
                     >
@@ -109,13 +109,13 @@ const hasImage = (project: ProjectItem) => Boolean(project.image?.url || project
                                 alt={project.imageAlt ?? project.title}
                                 widths={[720, 1280, 1920]}
                                 sizes="100vw"
-                                class="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]"
+                                class="absolute inset-0 h-full w-full object-cover spring group-hover:scale-[1.03]"
                             />
                             <div class="absolute inset-0 bg-[linear-gradient(90deg,rgba(10,8,1,0.88)_0%,rgba(10,8,1,0.63)_45%,rgba(10,8,1,0.1)_100%)]" aria-hidden="true"></div>
                         </>
                     ) : (
                         <div class="absolute inset-0" style={`background: ${accentOf(project)};`} aria-hidden="true">
-                            <Image src={flor} alt="" class="absolute -bottom-16 -right-14 h-72 w-72 rotate-12 opacity-15 transition duration-700 group-hover:rotate-45 group-hover:scale-110" />
+                            <Image src={flor} alt="" class="absolute -bottom-16 -right-14 h-72 w-72 rotate-12 opacity-15 spring group-hover:rotate-45 group-hover:scale-110" />
                             <span class="absolute right-8 top-5 font-display text-[10rem] font-black leading-none text-black/8">0{index + 1}</span>
                         </div>
                     )}
@@ -133,7 +133,7 @@ const hasImage = (project: ProjectItem) => Boolean(project.image?.url || project
                             href={project.href}
                             target={project.external ? "_blank" : undefined}
                             rel={project.external ? "noopener noreferrer" : undefined}
-                            class={`mt-7 inline-flex w-fit min-h-12 items-center rounded-full px-5 py-3 font-display font-bold transition hover:-translate-y-1 focus-visible:outline-2 focus-visible:outline-offset-4 ${hasImage(project) || project.accent === "primary" ? "bg-white text-primary focus-visible:outline-white" : "bg-black text-white focus-visible:outline-black"}`}
+                            class={`mt-7 inline-flex w-fit min-h-12 items-center rounded-full px-5 py-3 font-display font-bold spring press hover:-translate-y-1 focus-visible:outline-2 focus-visible:outline-offset-4 ${hasImage(project) || project.accent === "primary" ? "bg-white text-primary focus-visible:outline-white" : "bg-black text-white focus-visible:outline-black"}`}
                         >
                             {project.linkText}
                             <span class="ml-2" aria-hidden="true">↗</span>
@@ -146,6 +146,8 @@ const hasImage = (project: ProjectItem) => Boolean(project.image?.url || project
 </SectionIsland>
 
 <script>
+    import { popIn, squash } from "../../scripts/cartoon";
+
     const initProjectExplorer = () => {
         const root = document.getElementById("project-explorer");
         if (!root || root.dataset.ready === "true") return;
@@ -169,7 +171,15 @@ const hasImage = (project: ProjectItem) => Boolean(project.image?.url || project
             }
         };
 
-        buttons.forEach((button) => button.addEventListener("click", () => applyFilter(button.dataset.projectFilter ?? "all")));
+        /* El chip pulsado se aplasta como goma y las tarjetas que quedan
+           entran en ola; antes cambiaban de golpe. */
+        buttons.forEach((button) =>
+            button.addEventListener("click", () => {
+                applyFilter(button.dataset.projectFilter ?? "all");
+                squash(button, { amount: 0.12, origin: "50% 50%" });
+                popIn(cards.filter((card) => !card.hidden));
+            }),
+        );
     };
 
     if (document.readyState === "loading") {

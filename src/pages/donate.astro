@@ -80,7 +80,7 @@ const faq = d.faq.filter((item) => item?.question && item?.answer);
                     {d.channelLinks.map((link) => (
                         <a
                             href={link.href}
-                            class="inline-flex min-h-12 items-center gap-2 rounded-full border-2 border-black/15 px-6 py-3 font-display font-bold text-black transition hover:-translate-y-0.5 hover:border-primary hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary motion-reduce:hover:translate-y-0"
+                            class="inline-flex min-h-12 items-center gap-2 rounded-full border-2 border-black/15 px-6 py-3 font-display font-bold text-black spring press hover:-translate-y-0.5 hover:border-primary hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary motion-reduce:hover:translate-y-0"
                         >
                             <Icon name="mdi:arrow-down" class="h-4 w-4" aria-hidden="true" />
                             {link.text}
@@ -158,7 +158,7 @@ const faq = d.faq.filter((item) => item?.question && item?.answer);
 
                                 <button
                                     type="button"
-                                    class="copy-btn mt-6 inline-flex min-h-12 items-center gap-2 rounded-full bg-secondary px-7 py-3 font-display font-bold text-black transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary motion-reduce:hover:translate-y-0"
+                                    class="copy-btn mt-6 inline-flex min-h-12 items-center gap-2 rounded-full bg-secondary px-7 py-3 font-display font-bold text-black spring press hover:-translate-y-0.5 hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary motion-reduce:hover:translate-y-0"
                                     data-copy={wireBlock(account)}
                                     data-label={t("donate.wireDetails")}
                                 >
@@ -272,7 +272,7 @@ const faq = d.faq.filter((item) => item?.question && item?.answer);
                             <details class="group rounded-[1.5rem] border border-black/10 bg-white/60 px-6 py-5 open:bg-white/80">
                                 <summary class="flex cursor-pointer list-none items-center justify-between gap-6 font-display text-lg font-black leading-snug text-black marker:hidden focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
                                     {item.question}
-                                    <Icon name="mdi:plus" class="h-5 w-5 shrink-0 text-primary transition-transform duration-300 group-open:rotate-45 motion-reduce:transition-none" aria-hidden="true" />
+                                    <Icon name="mdi:plus" class="h-5 w-5 shrink-0 text-primary spring group-open:rotate-45 motion-reduce:transition-none" aria-hidden="true" />
                                 </summary>
                                 <p class="mt-4 max-w-[75ch] text-base leading-relaxed text-black/75">{item.answer}</p>
                             </details>

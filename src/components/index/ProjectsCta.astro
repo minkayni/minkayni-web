@@ -43,12 +43,12 @@ const exploreHref = d.button.href || "/projects";
         <p class="mt-6 max-w-[58ch] text-lg leading-[1.55] text-black/75">{d.heading.body}</p>
         {
             tags.length > 0 && (
-                <ul class="mt-8 flex flex-wrap justify-center gap-2" aria-label={t("home.linesOfAction")}>
+                <ul data-wave data-chain data-chain-y="-4" data-chain-rotate="-3" data-chain-reach="1" class="mt-8 flex flex-wrap justify-center gap-2" aria-label={t("home.linesOfAction")}>
                     {tags.map((tag) => (
                         <li>
                             <a
                                 href={`${exploreHref.split("#")[0]}#project-explorer`}
-                                class="inline-flex rounded-full bg-black/10 px-4 py-2 text-sm font-bold transition hover:-translate-y-0.5 hover:bg-primary hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                                class="inline-flex rounded-full bg-black/10 px-4 py-2 text-sm font-bold spring press hover:-translate-y-0.5 hover:bg-primary hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                             >
                                 {tag.text}
                             </a>
@@ -62,3 +62,11 @@ const exploreHref = d.button.href || "/projects";
         </div>
     </div>
 </SectionIsland>
+
+<script>
+    /* Chips en onda: al entrar el cursor la onda sale desde él; en hover el
+       chip salta y arrastra a sus vecinos. */
+    import { initCartoon } from "../../scripts/cartoon";
+
+    initCartoon(document.getElementById("projects-cta-title")?.closest("section") ?? document);
+</script>

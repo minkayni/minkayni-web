@@ -136,3 +136,21 @@ const reglasAnio = anios
         display: none;
     }
 </style>
+
+<script>
+    /* El filtro elegido se aplasta como goma y el que suelta da un rebotito.
+       El filtrado sigue siendo CSS puro (:has); esto solo pone el golpe. */
+    import { squash } from "../../scripts/cartoon";
+
+    const anterior = new Map<string, HTMLElement | null>();
+    document.querySelectorAll<HTMLInputElement>("input[data-filtro]").forEach((input) => {
+        if (input.checked) anterior.set(input.name, input.closest("label"));
+        input.addEventListener("change", () => {
+            const chip = input.closest("label");
+            squash(chip, { amount: 0.1, origin: "50% 50%" });
+            const previo = anterior.get(input.name);
+            if (previo && previo !== chip) squash(previo, { amount: 0.04, origin: "50% 50%", axis: "x" });
+            anterior.set(input.name, chip);
+        });
+    });
+</script>

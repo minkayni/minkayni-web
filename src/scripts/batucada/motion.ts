@@ -1,5 +1,7 @@
 import { gsap, ScrollTrigger, waitForFontsReady } from "../main";
 import { appleOut } from "../easing";
+import { CARTOON, SMOOTH, Spring } from "../spring";
+import { initCartoon } from "../cartoon";
 import { initInPageAnchors } from "../anchors";
 import { onWidthResize } from "../viewport";
 import { prefersReducedMotion } from "../platform";
@@ -8,6 +10,21 @@ import { prefersReducedMotion } from "../platform";
    Es el patrón de stagger de todas las entradas — el ritmo del tema,
    no un stagger uniforme. */
 const CLAVE = [0, 3, 6, 10, 12].map((n) => n * 0.07);
+
+/* Golpe de tambor en cadena: cada tiempo cae, se aplasta contra el parche
+   (más ancho y más bajo, desde abajo) y rebota a su forma, uno tras otro de
+   izquierda a derecha a 70 ms —una semicorchea—. El acento golpea más fuerte.
+   Solo transform: la opacidad de los tiempos apagados es del CSS. */
+const drum = (beats: HTMLElement[], fall: boolean) => {
+    const tl = gsap.timeline();
+    beats.forEach((beat, i) => {
+        const strength = beat.classList.contains("bg-accent") ? 1.5 : 1;
+        const at = i * 0.07;
+        if (fall) tl.fromTo(beat, { y: -18, scaleX: 0.85, scaleY: 1.2, transformOrigin: "50% 100%" }, { y: 0, scaleX: 1, scaleY: 1, duration: 0.16, ease: "power2.in" }, at);
+        tl.to(beat, { scaleX: 1 + 0.3 * strength, scaleY: 1 - 0.3 * strength, transformOrigin: "50% 100%", duration: 0.06, ease: "power1.out" }, fall ? at + 0.16 : at).to(beat, { scaleX: 1, scaleY: 1, ...CARTOON }, ">");
+    });
+    return tl;
+};
 
 
 /* ------------------------------------------------------------------
@@ -33,8 +50,7 @@ export const initBatucadaMotion = () => {
             gsap.to(heroItems, {
                 y: 0,
                 autoAlpha: 1,
-                duration: 0.55,
-                ease: appleOut,
+                ...CARTOON,
                 stagger: (i) => CLAVE[i % CLAVE.length] * 0.85,
                 clearProps: "all",
             });
@@ -85,15 +101,8 @@ export const initBatucadaMotion = () => {
             start: "top 78%",
             once: true,
             onEnter: () => {
-                const tl = gsap.timeline({ defaults: { duration: 0.5, ease: appleOut } });
-                if (beats.length) {
-                    tl.fromTo(
-                        beats,
-                        { scaleY: 0, transformOrigin: "bottom center" },
-                        { scaleY: 1, duration: 0.28, ease: "back.out(1.9)", stagger: 0.06, clearProps: "transform" },
-                        0,
-                    );
-                }
+                const tl = gsap.timeline({ defaults: { ...CARTOON } });
+                if (beats.length) tl.add(drum(beats, true), 0);
                 if (hits.length) {
                     tl.to(hits, { y: 0, autoAlpha: 1, stagger: (i) => CLAVE[i % CLAVE.length], clearProps: "all" }, 0.05);
                 }
@@ -101,9 +110,24 @@ export const initBatucadaMotion = () => {
                     tl.to(list.children, { y: 0, autoAlpha: 1, stagger: (i) => CLAVE[i % CLAVE.length], clearProps: "all" }, 0.2 + li * 0.12);
                 });
                 if (photos.length) {
-                    tl.fromTo(photos, { scale: 1.05 }, { scale: 1, duration: 0.9, clearProps: "transform" }, 0);
+                    /* Sin rebote: la foto llena su marco y bajar de 1 enseñaría el borde. */
+                    tl.fromTo(photos, { scale: 1.05 }, { scale: 1, ...SMOOTH, clearProps: "transform" }, 0);
                 }
             },
+        });
+    });
+
+    /* Stickers en gelatina y demás estilos marcados en el HTML (data-jelly…). */
+    initCartoon();
+
+    /* Pasar el puntero por una cabecera de compás vuelve a tocar el redoble. */
+    document.querySelectorAll<HTMLElement>("[data-bp-beats]").forEach((strip) => {
+        const header = strip.closest("header") ?? strip;
+        const beats = Array.from(strip.children) as HTMLElement[];
+        let playing: gsap.core.Timeline | null = null;
+        header.addEventListener("pointerenter", (e) => {
+            if (e.pointerType === "touch" || playing?.isActive()) return;
+            playing = drum(beats, false);
         });
     });
 
@@ -144,6 +168,15 @@ export const initPulseline = () => {
         const setX1 = gsap.quickSetter(s1, "x", "px");
         const setX2 = gsap.quickSetter(s2, "x", "px");
 
+        /* La cinta reacciona a la velocidad del scroll (no a su posición): al
+           bajar rápido se inclina hasta 4° y corre hasta el doble, y al parar
+           vuelve con el resorte de caricatura. */
+        let st: ScrollTrigger | undefined;
+        let boost = 1;
+        const band = root.firstElementChild as HTMLElement | null;
+        const setSkew = band ? gsap.quickSetter(band, "skewX", "deg") : () => {};
+        const lean = new Spring(0, "cartoon", (v) => setSkew(v), 0.01);
+
         const setup = () => {
             if (tickerFn) {
                 gsap.ticker.remove(tickerFn);
@@ -162,7 +195,10 @@ export const initPulseline = () => {
 
             const PX_PER_SEC = 55;
             tickerFn = () => {
-                const dx = (gsap.ticker.deltaRatio() * PX_PER_SEC) / 60;
+                const k = Math.max(-1, Math.min(1, (st?.getVelocity() ?? 0) / 1500));
+                lean.to(-4 * k);
+                boost += (1 + Math.abs(k) - boost) * 0.1;
+                const dx = (gsap.ticker.deltaRatio() * PX_PER_SEC * boost) / 60;
                 x1 -= dx;
                 x2 -= dx;
                 if (x1 <= -W) x1 += 2 * W;
@@ -177,7 +213,7 @@ export const initPulseline = () => {
            `resize` al desplazarse y rehacer la marquesina ahí la reiniciaba. */
         onWidthResize(setup);
 
-        ScrollTrigger.create({
+        st = ScrollTrigger.create({
             trigger: root,
             start: "top bottom",
             end: "bottom top",
@@ -187,6 +223,7 @@ export const initPulseline = () => {
                 } else if (tickerFn) {
                     gsap.ticker.remove(tickerFn);
                     tickerFn = null;
+                    lean.jump(0);
                 }
             },
         });
