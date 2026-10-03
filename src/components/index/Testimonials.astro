@@ -142,6 +142,7 @@ const STRAPI_URL = import.meta.env.STRAPI_URL;
     // Cliente: GSAP + ScrollTrigger con limpieza via gsap.context
     import { gsap, ScrollTrigger } from "../../scripts/main";
     import { appleOut } from "../../scripts/easing";
+    import { CARTOON } from "../../scripts/spring";
     if (typeof window !== "undefined") {
         const section = document.querySelector("[data-pin]") as HTMLElement;
         const slides = gsap.utils.toArray("[data-slide]") as HTMLElement[];
@@ -165,10 +166,10 @@ const STRAPI_URL = import.meta.env.STRAPI_URL;
             gsap.set(blob, { opacity: 0, scale: o.blobS, rotate: left ? -o.blobR : o.blobR, transformOrigin: "50% 50%" });
         };
 
-        const enterTl = (els: ReturnType<typeof getEls>, dur = 0.7) => {
+        const enterTl = (els: ReturnType<typeof getEls>) => {
             const { icon, body, author, org, blob } = els;
             return gsap
-                .timeline({ defaults: { ease: appleOut, duration: dur }, paused: true })
+                .timeline({ defaults: { ...CARTOON }, paused: true })
                 .to(blob, { opacity: 1, scale: 1 })
                 .to(icon, { opacity: 0.12, x: 0, y: 0, rotate: 0 }, "<+=0.05")
                 .to(body, { opacity: 1, x: 0, y: 0 }, "<+=0.10")
@@ -259,7 +260,7 @@ const STRAPI_URL = import.meta.env.STRAPI_URL;
                     const om = s.querySelector("[data-org-mobile]");
                     const els = { ...base, author: am || base.author, org: om || base.org };
                     prime(els, { iconY: 32, iconX: 28, iconR: 8, bodyY: 26, bodyX: 18, authorY: 22, authorX: 14, orgY: 18, orgX: 12, blobS: 0.92, blobR: 0 });
-                    const tl = enterTl(els, 0.7);
+                    const tl = enterTl(els);
                     ScrollTrigger.create({
                         trigger: s,
                         start: "top 50%",

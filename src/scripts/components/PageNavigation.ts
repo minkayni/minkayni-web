@@ -1,6 +1,7 @@
 import { prefersReducedMotion } from "../platform";
 import { gsap, ScrollTrigger } from "../main";
 import { apple, appleOut } from "../easing";
+import { BOUNCY, CARTOON } from "../spring";
 
 type Cfg = {
     baseFontSize: string;
@@ -166,7 +167,7 @@ export const initPageNav = () => {
                     if (textEl) {
                         gsap.to(textEl, { fillOpacity: 1, strokeWidth: cfg.activeStrokeWidth, duration: cfg.highlightIn, ease: appleOut, overwrite: "auto" });
                     }
-                    gsap.to(li, { scale: cfg.activeScale, y: "-2px", duration: Math.min(cfg.highlightIn, 0.25), ease: appleOut, transformOrigin: "left center", overwrite: "auto" });
+                    gsap.to(li, { scale: cfg.activeScale, y: "-2px", ...(prefersReduced ? { duration: 0 } : BOUNCY), transformOrigin: "left center", overwrite: "auto" });
                     animMap.get(li)?.start();
                     nav.dataset.currentCollapse = String(Number.isFinite(itemCollapseThreshold) ? itemCollapseThreshold : cfg.collapseThreshold);
                 };
@@ -179,7 +180,7 @@ export const initPageNav = () => {
                         const n = len(textEl);
                         if (n) gsap.to(textEl, { duration: Math.min(cfg.highlightOut, 0.18), ease: "steps(1)", attr: { rotate: list(zeros(n)), dx: list(zeros(n)) }, overwrite: "auto" });
                     }
-                    gsap.to(li, { scale: 1, y: "0px", duration: Math.min(cfg.highlightOut, 0.2), ease: appleOut, transformOrigin: "left center", overwrite: "auto" });
+                    gsap.to(li, { scale: 1, y: "0px", ...(prefersReduced ? { duration: 0 } : BOUNCY), transformOrigin: "left center", overwrite: "auto" });
                     nav.dataset.currentCollapse = String(cfg.collapseThreshold);
                 };
 
@@ -221,8 +222,10 @@ export const initPageNav = () => {
                 }
             } else {
                 // Mostrar SIEMPRE el nav y el menú para recuperar tras ocultado automático
-                animate(nav, { autoAlpha: 1, y: 0, ease: appleOut });
-                if (menuEl) animate(menuEl, { autoAlpha: 1, y: 0, ease: appleOut });
+                /* Al volver, rebota; al irse, no (la salida no se mira). */
+                const back = prefersReduced ? {} : CARTOON;
+                animate(nav, { autoAlpha: 1, y: 0, ...back });
+                if (menuEl) animate(menuEl, { autoAlpha: 1, y: 0, ...back });
                 nav.style.pointerEvents = "auto";
                 if (menuEl) menuEl.style.pointerEvents = "auto";
             }

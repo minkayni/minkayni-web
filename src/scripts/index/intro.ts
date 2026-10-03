@@ -1,5 +1,6 @@
 import { gsap, ScrollTrigger, waitForFontsReady } from "../main.ts";
 import { appleOut } from "../easing";
+import { CARTOON } from "../spring";
 import { $, on, setHeights, setRadius } from "./helpers";
 import { animateParagraph } from "./paragraph";
 import type { AnimationItem } from "lottie-web";
@@ -137,8 +138,7 @@ export const showContentNoIntro = (opts?: {
                 gsap.to(navItems, {
                     y: 0,
                     opacity: 1,
-                    duration: 0.8,
-                    ease: appleOut,
+                    ...CARTOON,
                     stagger: 0.08,
                     /* NavMenu (React) entra con esta misma cascada, no al acabar la intro. */
                     onStart: () => window.dispatchEvent(new CustomEvent("nav:reveal")),
@@ -194,8 +194,7 @@ export const showContentNoIntro = (opts?: {
                 {
                     y: 0,
                     opacity: 1,
-                    duration: 0.8,
-                    ease: appleOut,
+                    ...CARTOON,
                     stagger: 0.08,
                     /* NavMenu (React) entra con esta misma cascada, no al acabar la intro. */
                     onStart: () => window.dispatchEvent(new CustomEvent("nav:reveal")),
@@ -334,8 +333,7 @@ export const initIntro = (prefersReduced: boolean): void => {
                 {
                     y: 0,
                     opacity: 1,
-                    duration: 0.8,
-                    ease: appleOut,
+                    ...CARTOON,
                     stagger: 0.08,
                     /* NavMenu (React) entra con esta misma cascada, no al acabar la intro. */
                     onStart: () => window.dispatchEvent(new CustomEvent("nav:reveal")),

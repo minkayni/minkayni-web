@@ -125,7 +125,7 @@ export const initBatucadaMap = () => {
             const PIN_IDLE = ["bg-bp-blue"];
             const PIN_ACTIVE = ["bg-accent", "scale-125"];
             const PIN =
-                "bp-pin grid place-items-center w-full h-full rotate-45 bg-bp-blue border-2 border-black text-black font-black text-[0.68rem] shadow-[2px_2px_0_rgba(10,8,1,0.35)] transition-[scale,background-color] duration-[180ms] ease-bp-rebound group-hover:scale-125 group-hover:bg-accent motion-reduce:transition-none cursor-pointer";
+                "bp-pin grid place-items-center w-full h-full rotate-45 bg-bp-blue border-2 border-black text-black font-black text-[0.68rem] shadow-[2px_2px_0_rgba(10,8,1,0.35)] spring group-hover:scale-125 group-hover:bg-accent motion-reduce:transition-none cursor-pointer";
 
             const markers = sectors.map((sector, index) => {
                 const icon = L.divIcon({
@@ -220,7 +220,7 @@ export const initBatucadaMap = () => {
                         const label = attr(text(strings.open, { index: i + 1, count: photos.length }));
                         return (
                             `<button type="button" data-bp-gallery-photo="${i}" aria-label="${label}"` +
-                            ` class="bp-tip pointer-events-auto absolute m-0 block cursor-pointer overflow-hidden border-2 border-black bg-white p-0 shadow-[4px_4px_0_rgba(10,8,1,0.35)] transition-[scale] duration-[180ms] ease-bp-rebound hover:scale-[1.06] focus-visible:outline-[3px] focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:transition-none [translate:-50%_-50%]"` +
+                            ` class="bp-tip pointer-events-auto absolute m-0 block cursor-pointer overflow-hidden border-2 border-black bg-white p-0 shadow-[4px_4px_0_rgba(10,8,1,0.35)] spring hover:scale-[1.06] focus-visible:outline-[3px] focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:transition-none [translate:-50%_-50%]"` +
                             ` style="left:${spot.x}px; top:${spot.y}px; width:${spot.width}px; height:${spot.height}px; rotate:${spot.rotate}deg; animation-delay:${spot.delay}ms,${spot.delay + 450}ms">` +
                             `<img src="${attr(photos[i].thumb)}" alt="" width="${spot.width}" height="${spot.height}" class="block h-full w-full max-w-none object-cover" decoding="async">` +
                             `</button>`

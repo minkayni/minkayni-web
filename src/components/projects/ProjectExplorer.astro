@@ -109,13 +109,13 @@ const hasImage = (project: ProjectItem) => Boolean(project.image?.url || project
                                 alt={project.imageAlt ?? project.title}
                                 widths={[720, 1280, 1920]}
                                 sizes="100vw"
-                                class="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]"
+                                class="absolute inset-0 h-full w-full object-cover spring group-hover:scale-[1.03]"
                             />
                             <div class="absolute inset-0 bg-[linear-gradient(90deg,rgba(10,8,1,0.88)_0%,rgba(10,8,1,0.63)_45%,rgba(10,8,1,0.1)_100%)]" aria-hidden="true"></div>
                         </>
                     ) : (
                         <div class="absolute inset-0" style={`background: ${accentOf(project)};`} aria-hidden="true">
-                            <Image src={flor} alt="" class="absolute -bottom-16 -right-14 h-72 w-72 rotate-12 opacity-15 transition duration-700 group-hover:rotate-45 group-hover:scale-110" />
+                            <Image src={flor} alt="" class="absolute -bottom-16 -right-14 h-72 w-72 rotate-12 opacity-15 spring group-hover:rotate-45 group-hover:scale-110" />
                             <span class="absolute right-8 top-5 font-display text-[10rem] font-black leading-none text-black/8">0{index + 1}</span>
                         </div>
                     )}

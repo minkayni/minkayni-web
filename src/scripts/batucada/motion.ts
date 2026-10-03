@@ -1,5 +1,6 @@
 import { gsap, ScrollTrigger, waitForFontsReady } from "../main";
 import { appleOut } from "../easing";
+import { BOUNCY, CARTOON } from "../spring";
 import { initInPageAnchors } from "../anchors";
 import { onWidthResize } from "../viewport";
 import { prefersReducedMotion } from "../platform";
@@ -33,8 +34,7 @@ export const initBatucadaMotion = () => {
             gsap.to(heroItems, {
                 y: 0,
                 autoAlpha: 1,
-                duration: 0.55,
-                ease: appleOut,
+                ...CARTOON,
                 stagger: (i) => CLAVE[i % CLAVE.length] * 0.85,
                 clearProps: "all",
             });
@@ -85,12 +85,12 @@ export const initBatucadaMotion = () => {
             start: "top 78%",
             once: true,
             onEnter: () => {
-                const tl = gsap.timeline({ defaults: { duration: 0.5, ease: appleOut } });
+                const tl = gsap.timeline({ defaults: { ...CARTOON } });
                 if (beats.length) {
                     tl.fromTo(
                         beats,
                         { scaleY: 0, transformOrigin: "bottom center" },
-                        { scaleY: 1, duration: 0.28, ease: "back.out(1.9)", stagger: 0.06, clearProps: "transform" },
+                        { scaleY: 1, ...BOUNCY, stagger: 0.06, clearProps: "transform" },
                         0,
                     );
                 }

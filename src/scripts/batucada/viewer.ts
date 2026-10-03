@@ -58,7 +58,7 @@ const format = (template: string, params: Record<string, string | number>): stri
 /* Botón rombo: el mismo gesto gráfico que los pines del mapa y los números
    de la lista de sectores. El contenido se gira al revés para leerse recto. */
 const DIAMOND =
-    "grid h-11 w-11 shrink-0 cursor-pointer place-items-center rotate-45 border-2 border-black bg-accent text-black shadow-[3px_3px_0_rgba(10,8,1,0.55)] transition-[scale,background-color] duration-[180ms] ease-bp-rebound hover:scale-110 hover:bg-bp-blue focus-visible:outline-[3px] focus-visible:outline-offset-[6px] focus-visible:outline-white disabled:pointer-events-none disabled:opacity-35 motion-reduce:transition-none";
+    "grid h-11 w-11 shrink-0 cursor-pointer place-items-center rotate-45 border-2 border-black bg-accent text-black shadow-[3px_3px_0_rgba(10,8,1,0.55)] spring hover:scale-110 hover:bg-bp-blue focus-visible:outline-[3px] focus-visible:outline-offset-[6px] focus-visible:outline-white disabled:pointer-events-none disabled:opacity-35 motion-reduce:transition-none";
 const DIAMOND_LABEL = "-rotate-45 text-[1.15rem] font-black leading-none";
 
 /** Distancia mínima de un gesto para que cuente como deslizar. */
@@ -569,7 +569,7 @@ const renderThumbs = (): void => {
     thumbsEl.innerHTML = photos
         .map(
             (photo, index) =>
-                `<button type="button" class="relative h-14 w-20 shrink-0 cursor-pointer overflow-hidden border-2 border-black bg-white opacity-55 transition-[opacity,scale] duration-[180ms] ease-bp-rebound hover:opacity-100 focus-visible:outline-[3px] focus-visible:outline-offset-[3px] focus-visible:outline-white data-[active]:border-accent data-[active]:opacity-100 motion-reduce:transition-none" data-viewer-index="${index}">` +
+                `<button type="button" class="relative h-14 w-20 shrink-0 cursor-pointer overflow-hidden border-2 border-black bg-white opacity-55 spring hover:opacity-100 focus-visible:outline-[3px] focus-visible:outline-offset-[3px] focus-visible:outline-white data-[active]:border-accent data-[active]:opacity-100 motion-reduce:transition-none" data-viewer-index="${index}">` +
                 `<img src="${photo.strip}" alt="" width="160" height="96" class="block h-full w-full object-cover" loading="lazy" decoding="async">` +
                 `</button>`,
         )

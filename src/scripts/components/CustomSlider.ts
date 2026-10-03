@@ -1,7 +1,7 @@
 import { gsap, ScrollTrigger } from "../../scripts/main";
 import { apple, appleOut } from "../easing";
 import { isIOS, isMobileViewport as isMobile } from "../platform";
-import { rubberband, springTween, VelocityTracker } from "../spring";
+import { BOUNCY, CARTOON, rubberband, springTween, VelocityTracker } from "../spring";
 
 /* El estado vive en el propio elemento (no en el módulo) para que sobreviva a
    una segunda ejecución del script: `init` es la guarda anti-doble-init. Un
@@ -101,7 +101,7 @@ const readState = (el: HTMLElement): SliderState =>
         const show = (el: HTMLElement, txt?: string, inst?: boolean) => {
             cur = txt || "";
             el.textContent = cur;
-            inst ? gsap.set(el, { opacity: 1, y: 0 }) : gsap.to(el, { opacity: 1, y: 0, duration: 0.18, ease: appleOut });
+            inst ? gsap.set(el, { opacity: 1, y: 0 }) : gsap.to(el, { opacity: 1, y: 0, ...BOUNCY });
         };
         return {
             mount(init?: string, samples: (string | undefined)[] = []) {
@@ -116,17 +116,11 @@ const readState = (el: HTMLElement): SliderState =>
                 gsap.set(b, { opacity: 0, y: 8 });
                 b.textContent = n;
                 gsap.to(a, { opacity: 0, y: -6, duration: 0.1, ease: appleOut });
-                gsap.to(b, {
-                    opacity: 1,
-                    y: 0,
-                    duration: 0.16,
-                    ease: appleOut,
-                    onComplete: () => {
-                        [a, b] = [b, a];
-                        gsap.set(b, { opacity: 0, y: 8 });
-                        cur = n;
-                    },
-                });
+                gsap.to(b, { opacity: 1, y: 0, ...BOUNCY });
+                /* El relevo se apunta ya, no al acabar: el resorte dura casi un
+                   segundo y un cambio rápido de carta mataría su onComplete. */
+                [a, b] = [b, a];
+                cur = n;
             },
             remount(samples: (string | undefined)[]) {
                 wrap.style.height = measure(samples) + "px";
@@ -172,7 +166,7 @@ const readState = (el: HTMLElement): SliderState =>
                 },
             });
         gsap.set(next, { pointerEvents: "auto" });
-        gsap.to(next, { opacity: 1, y: 0, duration: 0.16, ease: appleOut });
+        gsap.to(next, { opacity: 1, y: 0, ...BOUNCY });
         aboutCurrent = i;
     };
 
@@ -276,7 +270,7 @@ const readState = (el: HTMLElement): SliderState =>
                     }
                 },
             });
-            introTl.to(cards, { opacity: 1, duration: 0.6, stagger: 0.1, ease: appleOut }).addLabel("cardsDone").to(textEls, { opacity: 1, y: 0, duration: 0.45, ease: appleOut, stagger: 0.08 }, "cardsDone+=0.1").to(dots, { opacity: 1, duration: 0.4, ease: appleOut, stagger: 0.04 }, "cardsDone+=0.05");
+            introTl.to(cards, { opacity: 1, duration: 0.6, stagger: 0.1, ease: appleOut }).addLabel("cardsDone").to(textEls, { opacity: 1, y: 0, ...CARTOON, stagger: 0.08 }, "cardsDone+=0.1").to(dots, { opacity: 1, duration: 0.4, ease: appleOut, stagger: 0.04 }, "cardsDone+=0.05");
             state.isDesktop = true;
             ScrollTrigger.create({
                 trigger: section,
@@ -415,7 +409,7 @@ const readState = (el: HTMLElement): SliderState =>
                     vib(8);
                 }
             } else if (eff < PREVIEW_MIN && activePreview === "next") {
-                next && gsap.to(next, { y: SPACING_Y, scale: 1 - DECAY, duration: 0.25, ease: appleOut });
+                next && gsap.to(next, { y: SPACING_Y, scale: 1 - DECAY, ...BOUNCY });
                 setActive(initialIdx);
                 activePreview = null;
             }
@@ -428,7 +422,7 @@ const readState = (el: HTMLElement): SliderState =>
                     vib(8);
                 }
             } else if (eff > -PREVIEW_MIN && activePreview === "prev") {
-                prev && gsap.to(prev, { y: (list.length - 1) * SPACING_Y, scale: 1 - (list.length - 1) * DECAY, duration: 0.18, ease: appleOut });
+                prev && gsap.to(prev, { y: (list.length - 1) * SPACING_Y, scale: 1 - (list.length - 1) * DECAY, ...BOUNCY });
                 setActive(initialIdx);
                 activePreview = null;
             }
@@ -468,8 +462,8 @@ const readState = (el: HTMLElement): SliderState =>
                 }
                 const next = list[1],
                     prev = list.at(-1)!;
-                next && gsap.to(next, { y: SPACING_Y, scale: 1 - DECAY, duration: 0.18, ease: appleOut });
-                if (list.length > 1) prev && gsap.to(prev, { y: (list.length - 1) * SPACING_Y, scale: 1 - (list.length - 1) * DECAY, duration: 0.18, ease: appleOut });
+                next && gsap.to(next, { y: SPACING_Y, scale: 1 - DECAY, ...BOUNCY });
+                if (list.length > 1) prev && gsap.to(prev, { y: (list.length - 1) * SPACING_Y, scale: 1 - (list.length - 1) * DECAY, ...BOUNCY });
             }
             dragging.releasePointerCapture(e.pointerId);
             dragging = null;
@@ -508,13 +502,13 @@ const readState = (el: HTMLElement): SliderState =>
                 state.mobileIntroPlaying = true;
                 isEntering = true;
                 gsap.to(seq, { opacity: 1, duration: 0.4, ease: appleOut });
-                gsap.to(uiEls, { opacity: 1, y: 0, duration: 0.45, ease: appleOut, delay: 0.05, stagger: 0.06 });
+                gsap.to(uiEls, { opacity: 1, y: 0, ...CARTOON, delay: 0.05, stagger: 0.06 });
                 gsap.delayedCall(1, () => {
                     const list = ordered();
                     list.forEach((c, i) => {
                         const rot = +c.dataset.rot!,
                             jx = +c.dataset.jx!;
-                        gsap.fromTo(c, { x: jx * 0.2, y: 0, rotation: rot * 0.3, scale: 1 }, { x: jx, y: i * 14, rotation: rot, scale: 1 - i * 0.012, duration: 0.7, ease: appleOut, stagger: 1 });
+                        gsap.fromTo(c, { x: jx * 0.2, y: 0, rotation: rot * 0.3, scale: 1 }, { x: jx, y: i * 14, rotation: rot, scale: 1 - i * 0.012, ...CARTOON, stagger: 1 });
                     });
                     gsap.delayedCall(0.2, () => {
                         isEntering = false;

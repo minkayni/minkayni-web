@@ -55,8 +55,8 @@
 @theme static {
     /* Resortes (ver scripts/spring.ts; regenerar con tools/springs.ts). Física
        real convertida a linear(): cada curva va con SU duración, la de
-       asentado. Generan ease-spring-press, ease-spring-snappy… Sin rebote
-       salvo que lo justifique un gesto (pulsar, soltar) o un hover. */
+       asentado. Generan ease-spring-press, ease-spring-cartoon… Rebota todo
+       lo que se desplaza, gira o escala; nunca color ni opacidad sola. */
     --ease-spring-press: linear(0, 0.006 1%, 0.029 2.3%, 0.067 3.5%, 0.127 5%, 0.211 6.8%, 0.375 9.8%, 0.584 13.5%, 0.71 16%, 0.809 18.3%, 0.893 20.5%, 0.961 22.8%, 1.013 25%, 1.05 27.3%, 1.077 29.8%, 1.092 32.5%, 1.094 36%, 1.078 40.8%, 1.018 52.8%, 0.998 60%, 0.991 69%, 1.001 99.8%, 1);
     --spring-press-duration: 542ms;
     --ease-spring-smooth: linear(0, 0.007 1.3%, 0.03 2.8%, 0.071 4.5%, 0.148 7%, 0.427 15%, 0.535 18.5%, 0.629 22%, 0.707 25.5%, 0.775 29.3%, 0.832 33.3%, 0.88 37.8%, 0.92 43%, 0.952 49.5%, 0.976 58%, 0.992 70.5%, 0.999 97%, 1);
@@ -67,20 +67,22 @@
     --spring-bouncy-duration: 975ms;
     --ease-spring-follow: linear(0, 0.008 1.8%, 0.033 3.8%, 0.082 6.3%, 0.163 9.5%, 0.452 19.8%, 0.566 24.3%, 0.658 28.5%, 0.735 32.8%, 0.802 37.3%, 0.859 42.3%, 0.905 47.8%, 0.942 54%, 0.97 61.8%, 0.989 72%, 0.999 88.8%, 1);
     --spring-follow-duration: 533ms;
+    --ease-spring-cartoon: linear(0, 0.005 0.8%, 0.026 1.8%, 0.061 2.8%, 0.122 4%, 0.196 5.3%, 0.315 7%, 0.645 11.5%, 0.778 13.5%, 0.881 15.3%, 0.956 16.8%, 1.019 18.3%, 1.07 19.8%, 1.114 21.5%, 1.143 23.3%, 1.16 25.3%, 1.162 27.5%, 1.149 30%, 1.107 34%, 1.033 40.5%, 0.998 44.8%, 0.979 49%, 0.974 54%, 0.989 63.7%, 1.003 74.5%, 1.001 92%, 1);
+    --spring-cartoon-duration: 1300ms;
 }
 
 /* `transition` con física: lo que se MUEVE (translate, scale, rotate) va con
-   resorte y se pasa un pelo del destino; color, fondo, sombra y opacidad
+   el resorte de caricatura y se pasa del destino antes de asentarse; color, fondo, sombra y opacidad
    siguen con la curva de Apple y sin rebote (un color que «rebota» parpadea).
    Sustituye a `transition`, no se combina con él ni con `duration-*`, que
    aplastaría el resorte en otra duración. */
 @utility spring {
     transition-property: translate, scale, rotate, transform, color, background-color, border-color, box-shadow, opacity, filter;
     transition-duration:
-        var(--spring-snappy-duration), var(--spring-snappy-duration), var(--spring-snappy-duration), var(--spring-snappy-duration),
+        var(--spring-cartoon-duration), var(--spring-cartoon-duration), var(--spring-cartoon-duration), var(--spring-cartoon-duration),
         200ms, 200ms, 200ms, 200ms, 200ms, 200ms;
     transition-timing-function:
-        var(--ease-spring-snappy), var(--ease-spring-snappy), var(--ease-spring-snappy), var(--ease-spring-snappy),
+        var(--ease-spring-cartoon), var(--ease-spring-cartoon), var(--ease-spring-cartoon), var(--ease-spring-cartoon),
         var(--ease-apple), var(--ease-apple), var(--ease-apple), var(--ease-apple), var(--ease-apple), var(--ease-apple);
 
     @media (prefers-reduced-motion: reduce) {

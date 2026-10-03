@@ -205,7 +205,7 @@ function BlockView({ block, strapiUrl }: { block: Block; strapiUrl: string }) {
                                 <p className="mt-2 max-w-[66ch] leading-relaxed text-black/70">{item.text}</p>
                                 {item.image?.url && (
                                     <figure className={`mt-6 w-full max-w-[440px] overflow-hidden rounded-[1.75rem] shadow-lg ${index % 2 === 0 ? "rotate-[1.5deg]" : "rotate-[-1.5deg]"}`}>
-                                        <CmsPicture media={item.image} alt={item.imageAlt ?? ""} widths={[440, 880]} sizes="(min-width: 40em) 440px, 100vw" className="h-auto w-full object-cover transition duration-700 hover:scale-[1.04]" strapiUrl={strapiUrl} />
+                                        <CmsPicture media={item.image} alt={item.imageAlt ?? ""} widths={[440, 880]} sizes="(min-width: 40em) 440px, 100vw" className="h-auto w-full object-cover spring hover:scale-[1.04]" strapiUrl={strapiUrl} />
                                     </figure>
                                 )}
                             </li>

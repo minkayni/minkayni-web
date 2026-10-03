@@ -7,7 +7,7 @@
    - ScrollTrigger.refresh() al terminar de cargar la página y las imágenes
      (las posiciones se calculaban con el layout a medio cargar → saltos). */
 import { gsap, ScrollTrigger } from "./main";
-import { appleOut } from "./easing";
+import { CARTOON } from "./spring";
 import { prefersReducedMotion } from "./platform";
 
 const isInView = (el: HTMLElement): boolean => {
@@ -55,8 +55,7 @@ export const initReveals = (): void => {
                 gsap.to(targets, {
                     opacity: 1,
                     y: 0,
-                    duration: 0.9,
-                    ease: appleOut,
+                    ...CARTOON,
                     delay: parseFloat(el.dataset.revealDelay || "0"),
                     onComplete: () => gsap.set(targets, restoreCss),
                 }),
@@ -78,8 +77,7 @@ export const initReveals = (): void => {
                 gsap.to(kids, {
                     opacity: 1,
                     y: 0,
-                    duration: 0.8,
-                    ease: appleOut,
+                    ...CARTOON,
                     stagger: 0.12,
                     onComplete: () => gsap.set(kids, restoreCss),
                 }),

@@ -23,15 +23,15 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { MotionConfig, motion, useReducedMotion } from 'motion/react';
-import { APPLE_BEZIER, APPLE_OUT_BEZIER } from '../../scripts/easing';
 import type { MenuLabels, MenuLanguage, MenuLink, MenuProject } from './menu-types';
 
-/* El panel aparece con la curva de Apple, sin rebote: un menú que surge solo
-   no debe pasarse de sitio. Pero al pasar de un ítem a otro el panel VIAJA
-   siguiendo al cursor (layoutId), y eso es movimiento físico: resorte con un
-   rebote leve (SPRINGS.snappy de scripts/spring.ts en la API de motion). */
-const transition = { duration: 0.35, ease: APPLE_BEZIER };
-const morph = { type: 'spring', visualDuration: 0.35, bounce: 0.2 } as const;
+/* Resortes de scripts/spring.ts traducidos a la API de motion
+   (visualDuration ≈ response / 1,2): el panel surge con zoom de caricatura,
+   viaja de un ítem a otro con algo menos de rebote y los ítems caen en su
+   sitio. La opacidad acompaña: lo que pasa de 1 se recorta. */
+const cartoon = { type: 'spring', visualDuration: 0.5, bounce: 0.5 } as const;
+const bouncy = { type: 'spring', visualDuration: 0.45, bounce: 0.4 } as const;
+const morph = { type: 'spring', visualDuration: 0.35, bounce: 0.3 } as const;
 
 const listVariants = {
   hidden: {},
@@ -40,7 +40,7 @@ const listVariants = {
 
 const itemVariants = {
   hidden: { opacity: 0, y: 10, filter: 'blur(6px)' },
-  visible: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.4, ease: APPLE_OUT_BEZIER } }
+  visible: { opacity: 1, y: 0, filter: 'blur(0px)', transition: cartoon }
 };
 
 interface MenuItemProps {
@@ -117,12 +117,12 @@ export const MenuItem = ({ setActive, active, item, href, current, chevron, onPa
               className="pointer-events-none absolute -bottom-0.5 left-0 h-[1.5px] w-full origin-left rounded-full bg-current"
               initial={{ scaleX: 0 }}
               animate={{ scaleX: open ? 1 : 0 }}
-              transition={{ duration: 0.3, ease: APPLE_OUT_BEZIER }}
+              transition={bouncy}
             />
           )}
         </span>
         {chevron && (
-          <motion.svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" className="mt-px opacity-70" animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.25, ease: APPLE_BEZIER }}>
+          <motion.svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" className="mt-px opacity-70" animate={{ rotate: open ? 180 : 0 }} transition={bouncy}>
             <path d="M1 3l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
           </motion.svg>
         )}
@@ -138,7 +138,7 @@ export const MenuItem = ({ setActive, active, item, href, current, chevron, onPa
               onMouseEnter={onPanelEnter}
               onMouseLeave={onPanelLeave}
             >
-              <motion.div initial={{ opacity: 0, scale: 0.85, y: -10 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={transition} style={{ transformOrigin: 'top center' }}>
+              <motion.div initial={{ opacity: 0, scale: 0.85, y: -10 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={cartoon} style={{ transformOrigin: 'top center' }}>
                 <motion.div
                   transition={morph}
                   layoutId="nav-menu-active"

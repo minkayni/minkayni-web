@@ -78,7 +78,7 @@ const periodLabel = (item: TimelineEntry) => (item.period && item.period !== chi
                 items.map((item, index) => (
                     <li class="tl-item relative mb-16 pl-12 last:mb-0 sm:pl-14" data-tl-item data-chip={chipOf(item)} data-year={yearOf(item)} data-period={periodLabel(item)}>
                         <span class="tl-dot absolute left-0 top-1 flex h-[25px] w-[25px] items-center justify-center rounded-full border-[3px] border-primary bg-surface transition-all duration-300" aria-hidden="true">
-                            <span class="tl-dot-core h-2 w-2 scale-0 rounded-full bg-primary transition-transform duration-300" />
+                            <span class="tl-dot-core h-2 w-2 scale-0 rounded-full bg-primary spring" />
                         </span>
                         <p class="font-display text-sm font-bold uppercase tracking-[0.18em] text-primary lg:hidden">{item.period}</p>
                         <h3 class="mt-1 font-display text-2xl font-bold text-black sm:text-3xl">{item.title}</h3>
@@ -93,7 +93,7 @@ const periodLabel = (item: TimelineEntry) => (item.period && item.period !== chi
                                     alt={item.imageAlt ?? ""}
                                     widths={[440, 880]}
                                     sizes="(min-width: 40em) 440px, 100vw"
-                                    class="h-auto w-full object-cover transition duration-700 hover:scale-[1.04]"
+                                    class="h-auto w-full object-cover spring hover:scale-[1.04]"
                                 />
                             </figure>
                         )}
@@ -106,7 +106,8 @@ const periodLabel = (item: TimelineEntry) => (item.period && item.period !== chi
 
 <script>
     import { gsap, ScrollTrigger, ScrollSmoother } from "../scripts/main";
-    import { apple, appleOut } from "../scripts/easing";
+    import { apple } from "../scripts/easing";
+    import { CARTOON } from "../scripts/spring";
 
     const initTimeline = () => {
         const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -134,7 +135,7 @@ const periodLabel = (item: TimelineEntry) => (item.period && item.period !== chi
             }
             if (periodEl) {
                 periodEl.textContent = items[i].dataset.period ?? "";
-                if (!reduced && periodEl.textContent) gsap.fromTo(periodEl, { y: 8, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: appleOut });
+                if (!reduced && periodEl.textContent) gsap.fromTo(periodEl, { y: 8, opacity: 0 }, { y: 0, opacity: 1, ...CARTOON });
             }
             if (countEl) countEl.textContent = `${String(i + 1).padStart(2, "0")} / ${String(items.length).padStart(2, "0")}`;
         };

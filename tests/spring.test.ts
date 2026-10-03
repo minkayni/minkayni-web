@@ -22,7 +22,7 @@ test("sin rebote no se pasa del destino; con rebote sí, pero con contención", 
   };
   assert.ok(peak(SPRINGS.smooth) <= 1 + 1e-6);
   assert.ok(peak(SPRINGS.snappy) > 1.01);
-  for (const cfg of Object.values(SPRINGS)) assert.ok(peak(cfg) < 1.15, "rebote poco profesional");
+  for (const cfg of Object.values(SPRINGS)) assert.ok(peak(cfg) < 1.2, "rebote desmedido");
 });
 
 test("el paso analítico es exacto aunque el paso sea grande", () => {

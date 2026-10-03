@@ -34,10 +34,10 @@ export interface SpringConfig {
     bounce: number;
 }
 
-/* Los valores que publica Apple en Designing Fluid Interfaces, más dos del
-   propio sitio para la marca. Regla de la charla: sin rebote salvo que el
-   gesto haya traído impulso (soltar, lanzar, arrastrar) o sea un momento de
-   celebración; un menú que aparece solo no debe pasarse de sitio. */
+/* Los valores que publica Apple en Designing Fluid Interfaces, más los del
+   propio sitio. Minkayni es una marca juguetona: todo lo que se desplaza,
+   gira o escala rebota, también las entradas (decisión del 2026-10-02).
+   Lo que no rebota nunca: opacidad sola, color, scroll y cifras. */
 export const SPRINGS = {
     /** Respuesta inmediata a una pulsación: hundirse y volver. */
     press: { response: 0.3, bounce: 0.4 },
@@ -49,6 +49,8 @@ export const SPRINGS = {
     bouncy: { response: 0.55, bounce: 0.4 },
     /** Seguir al cursor: suave, sin latigazos (Apple: mover/PiP 1,0 / 0,4). */
     follow: { response: 0.45, bounce: 0.08 },
+    /** Entradas, zooms y hovers con física de caricatura: se pasa ~16 % y vuelve. */
+    cartoon: { response: 0.6, bounce: 0.5 },
 } as const satisfies Record<string, SpringConfig>;
 
 export type SpringName = keyof typeof SPRINGS;
@@ -132,6 +134,14 @@ export function springTween(
     const v0 = handoff && Math.abs(handoff.distance) > 1e-3 ? velocity / handoff.distance : 0;
     return springEase(cfg, v0);
 }
+
+/* Atajos para GSAP, calculados una vez: `gsap.to(el, { y: 0, ...CARTOON })`.
+   Con opacidad en el mismo tween no hay parpadeo: CSS recorta lo que pasa de
+   1 y el valle posterior al rebote no baja del 97 %. */
+export const CARTOON = springTween("cartoon");
+export const BOUNCY = springTween("bouncy");
+export const SNAPPY = springTween("snappy");
+export const SMOOTH = springTween("smooth");
 
 /**
  * La curva como `linear()` de CSS, con su duración. Muestreo adaptativo: solo

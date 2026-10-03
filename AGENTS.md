@@ -40,7 +40,7 @@ El arranque y el build requieren `STRAPI_URL` y `STRAPI_TOKEN` válidos en `.env
 - Movimiento físico (basado en *Designing Fluid Interfaces*, WWDC 2018). Lo que el usuario toca o mueve usa resortes de `src/scripts/spring.ts`, no curvas fijas:
   - Hover que desplaza o escala: utilidad `spring` en vez de `transition` (sin `duration-*`). Botones y enlaces-pastilla: `spring press`.
   - Gestos (arrastrar, deslizar, lanzar): el elemento sigue al dedo 1:1 (`VelocityTracker`) y al soltar decide con `project()` y hereda la velocidad (`springTween(…, { velocity, distance })` o `Spring.to(…, { velocity })`). En los bordes, `rubberband()`, nunca un tope seco.
-  - Rebote solo si lo justifica un gesto (pulsar, soltar, lanzar) o un hover. Menús, paneles y reveals que aparecen solos entran sin pasarse (curvas de Apple o `SPRINGS.smooth`). Nunca rebote en opacidad ni en color.
+  - Física de caricatura en todo lo que se desplaza, gira o escala, también entradas y reveals: en GSAP `...CARTOON` (o `BOUNCY` para lo pequeño y frecuente), en CSS la utilidad `spring`, en motion `{ type: "spring", visualDuration: 0.5, bounce: 0.5 }`. Sin rebote: scroll (`scrollTo`, snaps, animaciones con `scrub`), contadores, color y opacidad sola, salidas, y lo que llena su marco (una foto que entra con zoom usa `SMOOTH`).
   - Las curvas CSS `--ease-spring-*` y sus `--spring-*-duration` se generan con `pnpm exec tsx tools/springs.ts`; `tests/spring.test.ts` falla si se desincronizan de `SPRINGS`.
 - Evitar `w-screen` en contenedores internos cuando pueda causar desbordamiento; preferir `w-full`, anchos máximos y padding responsivo.
 - Usar enlaces reales con `href`, estados de foco visibles, texto alternativo descriptivo y botones con etiquetas accesibles.

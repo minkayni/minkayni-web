@@ -105,7 +105,7 @@ const stats = (d.stats ?? []).filter((stat) => stat?.value && stat?.label);
 
 <script>
     import { gsap, SplitText, waitForFontsReady } from "../../scripts/main.ts";
-    import { appleOut } from "../../scripts/easing";
+    import { CARTOON, SMOOTH } from "../../scripts/spring";
 
     const initFeaturedProject = () => {
         const section = document.getElementById("featured-project");
@@ -156,8 +156,7 @@ const stats = (d.stats ?? []).filter((stat) => stat?.value && stat?.label);
                                 yPercent: 40,
                                 opacity: 0,
                                 stagger: 0.07,
-                                duration: 0.6,
-                                ease: appleOut,
+                                ...CARTOON,
                                 scrollTrigger: {
                                     trigger: section,
                                     start: "top 75%",
@@ -168,7 +167,7 @@ const stats = (d.stats ?? []).filter((stat) => stat?.value && stat?.label);
                 }
 
                 const timeline = gsap.timeline({
-                    defaults: { ease: appleOut },
+                    defaults: { ease: CARTOON.ease },
                     scrollTrigger: {
                         trigger: section,
                         start: "top 75%",
@@ -177,12 +176,13 @@ const stats = (d.stats ?? []).filter((stat) => stat?.value && stat?.label);
                 });
 
                 timeline
-                    .from(photo, { scale: 1.15, duration: 1.2 }, 0)
-                    .from(wordmark, { yPercent: -10, rotate: -2, opacity: 0, duration: 0.9 }, 0.2)
-                    .from(eyebrow, { y: 24, opacity: 0, duration: 0.5 }, 0.15);
+                    /* La foto llena su marco: con rebote bajaría de escala 1 y asomarían los bordes. */
+                    .from(photo, { scale: 1.15, ...SMOOTH }, 0)
+                    .from(wordmark, { yPercent: -10, rotate: -2, opacity: 0, duration: CARTOON.duration }, 0.2)
+                    .from(eyebrow, { y: 24, opacity: 0, duration: CARTOON.duration }, 0.15);
 
-                if (headlineSplit?.chars.length) timeline.from(headlineSplit.chars, { yPercent: 120, opacity: 0, stagger: { each: 0.02, from: "center" }, duration: 0.65 }, 0.25);
-                if (button) timeline.from(button, { y: 30, opacity: 0, duration: 0.5 }, 0.6);
+                if (headlineSplit?.chars.length) timeline.from(headlineSplit.chars, { yPercent: 120, opacity: 0, stagger: { each: 0.02, from: "center" }, duration: CARTOON.duration }, 0.25);
+                if (button) timeline.from(button, { y: 30, opacity: 0, duration: CARTOON.duration }, 0.6);
 
                 const revealFallback = window.setTimeout(() => gsap.set(animated, { clearProps: "opacity,visibility" }), 1800);
                 window.addEventListener("pagehide", () => {

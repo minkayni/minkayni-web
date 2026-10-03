@@ -1,5 +1,5 @@
 import { gsap, ScrollTrigger } from "./main";
-import { appleOut } from "./easing";
+import { CARTOON } from "./spring";
 
 /* Fundido de entrada del bloque de Momentos (carrusel + enlace a Novedades).
    El carrusel en sí lo mueve components/index/momentsInit.ts; aquí no se fija
@@ -13,9 +13,8 @@ const init = () => {
     gsap.from(blocks, {
         y: 30,
         opacity: 0,
-        duration: 0.7,
         stagger: 0.12,
-        ease: appleOut,
+        ...CARTOON,
         scrollTrigger: {
             trigger: container,
             start: "top 85%",
