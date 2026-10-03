@@ -236,6 +236,77 @@ export default function SiteMenu({ items, projectsHref, projects, languages, soc
     };
   }, [open, setState]);
 
+  /* Con el panel abierto: las redes responden en cadena y las letras de cada
+     ítem saltan una tras otra desde la que toca el puntero (o todas, con el
+     teclado). Las letras se parten al primer paso y se recomponen al cerrar,
+     para no dejar el DOM de React troceado. El recorte vertical del
+     envoltorio solo hace falta para la entrada: se quita en el ítem que salta
+     y vuelve al cerrar. */
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!open || !panel) return;
+    /* Importación dinámica: cartoon.ts arrastra main.ts (GSAP y su arranque
+       de página), que no puede evaluarse al renderizar la isla en el servidor. */
+    let cartoon: typeof import('../../scripts/cartoon') | null = null;
+    let cancelled = false;
+    import('../../scripts/cartoon').then(mod => {
+      if (cancelled) return;
+      cartoon = mod;
+      mod.bindChain(panel.querySelector<HTMLElement>('.sm-socials-list'));
+    });
+    const chains = new Map<HTMLElement, { play: (from?: number | 'start' | 'center') => void; revert: () => void }>();
+    const unclipped: HTMLElement[] = [];
+    const chainFor = (item: HTMLElement) => {
+      /* Solo el texto: SplitText reescribe el contenido al recomponer, y la
+         flecha de «Proyectos» es un nodo que React sigue actualizando. */
+      const label = item.querySelector<HTMLElement>('.sm-panel-itemText');
+      if (!label) return null;
+      let chain = chains.get(label);
+      if (!chain) {
+        const made = cartoon?.letterChain(label, item);
+        if (!made) return null;
+        chain = made;
+        chains.set(label, chain);
+      }
+      const wrap = item.closest<HTMLElement>('.sm-panel-itemWrap');
+      if (wrap && !unclipped.includes(wrap)) {
+        wrap.style.clipPath = 'none';
+        unclipped.push(wrap);
+      }
+      return chain;
+    };
+    const onOver = (event: PointerEvent) => {
+      if (event.pointerType === 'touch' || busyRef.current) return;
+      const item = (event.target as Element).closest<HTMLElement>('.sm-panel-item');
+      if (!item || item.contains(event.relatedTarget as Node)) return;
+      const chain = chainFor(item);
+      if (!chain) return;
+      const chars = Array.from(item.querySelectorAll('.cartoon-char'));
+      const near = chars.reduce(
+        (best, c, i) => {
+          const r = c.getBoundingClientRect();
+          const d = Math.abs(r.left + r.width / 2 - event.clientX);
+          return d < best.d ? { i, d } : best;
+        },
+        { i: 0, d: Infinity }
+      );
+      chain.play(near.i);
+    };
+    const onFocus = (event: FocusEvent) => {
+      const item = (event.target as Element).closest<HTMLElement>('.sm-panel-item');
+      if (item?.matches(':focus-visible')) chainFor(item)?.play('start');
+    };
+    panel.addEventListener('pointerover', onOver);
+    panel.addEventListener('focusin', onFocus);
+    return () => {
+      cancelled = true;
+      panel.removeEventListener('pointerover', onOver);
+      panel.removeEventListener('focusin', onFocus);
+      chains.forEach(chain => chain.revert());
+      unclipped.forEach(wrap => (wrap.style.clipPath = ''));
+    };
+  }, [open]);
+
   /* Acordeón de proyectos: mismo lenguaje que los ítems del panel, a escala. */
   const toggleProjects = useCallback(() => {
     const list = projectsListRef.current;
@@ -295,7 +366,7 @@ export default function SiteMenu({ items, projectsHref, projects, languages, soc
                       onClick={toggleProjects}
                     >
                       <span className="sm-panel-itemLabel inline-block [transform-origin:50%_100%] will-change-transform">
-                        {it.label}
+                        <span className="sm-panel-itemText">{it.label}</span>
                         <svg aria-hidden="true" width="0.55em" height="0.55em" viewBox="0 0 10 10" className={`ml-3 inline-block align-middle spring ${projectsOpen ? 'rotate-180' : ''}`}>
                           <path d="M1 3l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
@@ -321,7 +392,9 @@ export default function SiteMenu({ items, projectsHref, projects, languages, soc
                   </>
                 ) : (
                   <a className={`${itemClass} ${it.current ? 'opacity-50' : ''}`} href={it.href} aria-current={it.current ? 'page' : undefined}>
-                    <span className="sm-panel-itemLabel inline-block [transform-origin:50%_100%] will-change-transform">{it.label}</span>
+                    <span className="sm-panel-itemLabel inline-block [transform-origin:50%_100%] will-change-transform">
+                      <span className="sm-panel-itemText">{it.label}</span>
+                    </span>
                   </a>
                 )}
               </li>

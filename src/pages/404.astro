@@ -146,3 +146,62 @@ const englishCopy = {
         if (titulo) document.title = document.title.replace(/^[^•]*/, titulo + " ");
     })();
 </script>
+
+<script>
+    /* Titular de caricatura (la 404 es el sitio para jugar): las letras caen,
+       se aplastan al tocar suelo y rebotan, una tras otra; luego las que
+       quedan cerca del cursor saltan y se ladean. Se parte por palabras y
+       letras (para que el renglón no se corte a mitad de palabra); las
+       letras quedan ocultas al lector de pantalla y el h1 lleva el texto. */
+    import { gsap, SplitText, waitForFontsReady } from "../scripts/main";
+    import { prefersReducedMotion } from "../scripts/platform";
+    import { BOUNCY, CARTOON } from "../scripts/spring";
+
+    const title = document.getElementById("notfound-title");
+    if (title && !prefersReducedMotion()) {
+        waitForFontsReady(() => {
+            title.setAttribute("aria-label", (title.textContent ?? "").replace(/\s+/g, " ").trim());
+            const split = new SplitText(title, { type: "words,chars", charsClass: "cartoon-char", aria: "hidden" });
+            title.style.opacity = "1";
+            const chars = split.chars as HTMLElement[];
+            gsap.set(chars, { transformOrigin: "50% 100%" });
+            const drop = gsap.timeline();
+            chars.forEach((c, i) => {
+                drop.fromTo(c, { y: -40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.22, ease: "power2.in" }, i * 0.03)
+                    .to(c, { scaleX: 1.15, scaleY: 0.8, duration: 0.05 }, ">")
+                    .to(c, { scaleX: 1, scaleY: 1, ...CARTOON }, ">");
+            });
+
+            let frame = 0;
+            title.addEventListener("pointermove", (e) => {
+                if (e.pointerType === "touch" || drop.isActive() || frame) return;
+                frame = requestAnimationFrame(() => {
+                    frame = 0;
+                    chars.forEach((c, i) => {
+                        const r = c.getBoundingClientRect();
+                        const d = Math.hypot(r.left + r.width / 2 - e.clientX, r.top + r.height / 2 - e.clientY);
+                        const k = Math.max(0, 1 - d / 120);
+                        gsap.to(c, { y: -6 * k, rotate: (i % 2 ? 6 : -6) * k, ...BOUNCY, overwrite: "auto" });
+                    });
+                });
+            });
+            title.addEventListener("pointerleave", () => gsap.to(chars, { y: 0, rotate: 0, ...CARTOON, overwrite: "auto" }));
+        });
+    }
+</script>
+
+<style>
+    /* La caída de letras parte de oculto: solo con JS y movimiento permitido,
+       y con red de seguridad por si el script no llega. */
+    @media (prefers-reduced-motion: no-preference) {
+        :global(html[data-js]) #notfound-title {
+            opacity: 0;
+            animation: notfound-safety 0s 2.5s forwards;
+        }
+    }
+    @keyframes notfound-safety {
+        to {
+            opacity: 1;
+        }
+    }
+</style>

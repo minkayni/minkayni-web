@@ -124,9 +124,11 @@ startIdx = startIdx >= 0 ? startIdx : 0;
     .badge {
         border: 1px solid rgba(255, 255, 255, 0.25);
     }
+    /* `scale` y no `transform`: el estirón elástico (CustomSlider.ts) escribe
+       `transform` con GSAP y lo dejaría en 1 al terminar. */
     .dot.is-active {
         background: #111;
-        transform: scale(1.15);
+        scale: 1.15;
     }
 
     /* ABOUT controlado por GSAP; dejamos posiciones absolutas */

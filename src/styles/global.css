@@ -77,12 +77,14 @@
    Sustituye a `transition`, no se combina con él ni con `duration-*`, que
    aplastaría el resorte en otra duración. */
 @utility spring {
-    transition-property: translate, scale, rotate, transform, color, background-color, border-color, box-shadow, opacity, filter;
+    /* Sin `transform`: es la propiedad que escribe GSAP en cada cuadro
+       (cartoon.ts), y una transición CSS encima la arrastraría con retraso. */
+    transition-property: translate, scale, rotate, color, background-color, border-color, box-shadow, opacity, filter;
     transition-duration:
-        var(--spring-cartoon-duration), var(--spring-cartoon-duration), var(--spring-cartoon-duration), var(--spring-cartoon-duration),
+        var(--spring-cartoon-duration), var(--spring-cartoon-duration), var(--spring-cartoon-duration),
         200ms, 200ms, 200ms, 200ms, 200ms, 200ms;
     transition-timing-function:
-        var(--ease-spring-cartoon), var(--ease-spring-cartoon), var(--ease-spring-cartoon), var(--ease-spring-cartoon),
+        var(--ease-spring-cartoon), var(--ease-spring-cartoon), var(--ease-spring-cartoon),
         var(--ease-apple), var(--ease-apple), var(--ease-apple), var(--ease-apple), var(--ease-apple), var(--ease-apple);
 
     @media (prefers-reduced-motion: reduce) {

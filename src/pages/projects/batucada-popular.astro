@@ -296,7 +296,7 @@ const cartoKey = import.meta.env.PUBLIC_CARTO_KEY ?? "";
             <p class:list={[bp.eyebrow, "text-bp-blue"]} data-bp-hit>{d.ecoHeading.eyebrow}</p>
             <h2 data-scroll-float id="eco-title" class:list={[bp.h2, "max-w-[12ch]"]} data-bp-hit set:html={formatTitle(d.ecoHeading.title)} />
             <p class:list={[bp.body, "mt-7 max-w-[56ch]"]} data-bp-hit>{d.ecoHeading.body}</p>
-            <ul class="mt-[clamp(1.75rem,3.5vw,2.75rem)] flex flex-wrap gap-x-[1.1rem] gap-y-4" data-bp-clave>
+            <ul class="mt-[clamp(1.75rem,3.5vw,2.75rem)] flex flex-wrap gap-x-[1.1rem] gap-y-4" data-bp-clave data-jelly>
                 {
                     ecosystem.map((item, index) => (
                         <li class:list={["rounded-[3px_8px_4px_7px] border-2 px-4 py-[0.55rem] text-[0.85rem] font-black uppercase tracking-[0.08em]", index % 2 ? "rotate-[1deg] border-bp-blue text-bp-blue" : "-rotate-[1.2deg] border-white text-white"]}>{item.text}</li>

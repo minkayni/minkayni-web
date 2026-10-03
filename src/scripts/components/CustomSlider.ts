@@ -1,6 +1,6 @@
 import { gsap, ScrollTrigger } from "../../scripts/main";
 import { apple, appleOut } from "../easing";
-import { isIOS, isMobileViewport as isMobile } from "../platform";
+import { isIOS, isMobileViewport as isMobile, prefersReducedMotion } from "../platform";
 import { BOUNCY, CARTOON, rubberband, springTween, VelocityTracker } from "../spring";
 
 /* El estado vive en el propio elemento (no en el módulo) para que sobreviva a
@@ -171,6 +171,15 @@ const readState = (el: HTMLElement): SliderState =>
     };
 
     let currentIndex = -1;
+    /* El punto activo se estira hacia donde viene la carta, como una gota que
+       se suelta del anterior, y se recoge con rebote; el que deja de estar
+       activo encoge un pelo y vuelve. */
+    const stretchDot = (from: HTMLElement | undefined, to: HTMLElement | undefined, dir: 1 | -1) => {
+        if (!to || prefersReducedMotion()) return;
+        gsap.fromTo(to, { scaleX: 2.2, scaleY: 0.8, transformOrigin: dir > 0 ? "100% 50%" : "0% 50%" }, { scaleX: 1, scaleY: 1, ...BOUNCY, overwrite: "auto" });
+        if (from && from !== to) gsap.fromTo(from, { scaleX: 1.3, transformOrigin: dir > 0 ? "0% 50%" : "100% 50%" }, { scaleX: 1, ...BOUNCY, overwrite: "auto" });
+    };
+
     const setActive = (i: number) => {
         if (i === currentIndex) return;
         const el = cards[i];
@@ -179,6 +188,7 @@ const readState = (el: HTMLElement): SliderState =>
         nameSw?.swap(el.dataset.name || "");
         roleSw?.swap(el.dataset.role || "");
         dots.forEach((d, k) => d.classList.toggle("is-active", k === i));
+        stretchDot(dots[currentIndex], dots[i], i > currentIndex ? 1 : -1);
         showAbout(i);
         currentIndex = i;
     };

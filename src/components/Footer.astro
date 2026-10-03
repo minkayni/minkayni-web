@@ -213,14 +213,14 @@ const partnerLogos = (footer.partnersGallery?.files ?? [])
                 </div>
 
                 <nav class="mt-8 w-full" aria-label={t("footer.socialNetworks")}>
-                    <ul class="flex items-center justify-center md:justify-end gap-3 w-full">
+                    <ul data-chain class="flex items-center justify-center md:justify-end gap-3 w-full">
                         {
                             footer.Socials &&
                                 (() => {
                                     const items = buildSocialItems(footer.Socials);
                                     return items.map(({ href, icon, label }) => (
                                         <li>
-                                            <a href={href} aria-label={label} title={label} class="inline-flex items-center justify-center bg-secondary rounded-full p-3 text-white hover:bg-accent active:scale-[0.98] shadow-md hover:shadow-lg transition-all ease-in-out duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2" target="_blank" rel="noopener noreferrer">
+                                            <a href={href} aria-label={label} title={label} class="inline-flex items-center justify-center bg-secondary rounded-full p-3 text-white hover:bg-accent shadow-md hover:shadow-lg spring press focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2" target="_blank" rel="noopener noreferrer">
                                                 <Icon name={icon} class="w-5 h-5 md:w-6 md:h-6" aria-hidden="true" />
                                             </a>
                                         </li>
@@ -292,3 +292,10 @@ const partnerLogos = (footer.partnersGallery?.files ?? [])
         </div>
     </section>
 </footer>
+
+<script>
+    /* Redes en cadena: el icono tocado salta y los vecinos lo siguen. */
+    import { initCartoon } from "../scripts/cartoon";
+
+    initCartoon(document.querySelector("footer") ?? document);
+</script>
