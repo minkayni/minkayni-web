@@ -83,8 +83,10 @@ const cards = [
                             </span>
                             <span class="font-display text-2xl font-black leading-tight">{card.title}</span>
                             <span class="text-base leading-relaxed opacity-85">{card.text}</span>
-                            <span class={`mt-auto inline-flex items-center gap-2 font-display text-lg font-bold underline underline-offset-4 ${card.linkTone}`}>
-                                {card.link}
+                            {/* El subrayado va solo en el texto: puesto en el contenedor
+                                flex, la flecha dibujaba su propia raya y se veían dos. */}
+                            <span class={`mt-auto inline-flex items-center gap-2 font-display text-lg font-bold ${card.linkTone}`}>
+                                <span class="underline underline-offset-4">{card.link}</span>
                                 <span class="spring group-hover:translate-x-1" aria-hidden="true">
                                     →
                                 </span>
