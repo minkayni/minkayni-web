@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { SPRINGS, project, rubberband, springEase, springLinear, stepSpring, VelocityTracker } from "../src/scripts/spring";
+import { SPRINGS, project, rubberband, SpringChain, springEase, springLinear, stepSpring, VelocityTracker } from "../src/scripts/spring";
 
 test("todo resorte empieza en 0, acaba en 1 y queda quieto", () => {
   for (const cfg of Object.values(SPRINGS)) {
@@ -58,4 +58,25 @@ test("proyección, rubber-band y velocidad del puntero", () => {
   vt.add(50, 0, 50);
   assert.equal(vt.velocity(50).x, 1000);
   assert.equal(vt.velocity(400).x, 0);
+});
+
+test("cadena: tirar de un eslabón arrastra a los vecinos con menos amplitud y al soltar vuelve al reposo", () => {
+  const chain = new SpringChain(9, { response: 0.55, bounce: 0.45, coupling: 2.5 }, () => {});
+  chain.pull(4, -20);
+  chain.step(0.6);
+  const y = Array.from(chain.y);
+  assert.ok(y[4] < -10, `el eslabón sostenido no sube: ${y[4]}`);
+  assert.ok(y[3] < 0 && y[3] > y[4], "el vecino no acompaña o pasa al sostenido");
+  assert.ok(y[2] > y[3] && y[1] > y[2], "la amplitud no decae a lo largo de la cadena");
+  assert.ok(Math.abs(y[3] - y[5]) < 1e-9, "la cadena no es simétrica");
+  chain.release();
+  chain.step(4);
+  assert.ok(chain.atRest, "la cadena no se asienta");
+});
+
+test("cadena: un paso largo (pestaña en segundo plano) no la hace explotar", () => {
+  const chain = new SpringChain(20, { response: 0.55, bounce: 0.45, coupling: 2.5 }, () => {});
+  chain.impulse(10, -800);
+  chain.step(0.064);
+  assert.ok(Array.from(chain.y).every((v) => Number.isFinite(v) && Math.abs(v) < 100));
 });

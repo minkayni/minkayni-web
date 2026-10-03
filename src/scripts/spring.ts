@@ -234,13 +234,129 @@ const rafTicker: Ticker = (() => {
     return {
         add(cb) {
             subs.add(cb);
-            if (!id) id = requestAnimationFrame(loop);
+            /* Fuera del navegador (tests) no hay reloj: la física se avanza a mano. */
+            if (!id && typeof requestAnimationFrame === "function") id = requestAnimationFrame(loop);
         },
         remove(cb) {
             subs.delete(cb);
         },
     };
 })();
+
+/**
+ * Cadena de resortes: N masas en fila, cada una colgada de su reposo (0) por
+ * un resorte y unida a sus vecinas por otro. Tirar de un eslabón arrastra a
+ * los de al lado con retraso y menos amplitud, y al soltar la onda recorre la
+ * fila y se apaga. Es física de cuerda (masa-resorte acoplada), no una
+ * cascada de retardos: si se tira de otro eslabón a mitad, la onda se suma.
+ *
+ *   const chain = new SpringChain(items.length, { response: 0.55, bounce: 0.45, coupling: 2.5 },
+ *       (y) => items.forEach((el, i) => (el.style.translate = `0 ${y[i]}px`)));
+ *   chain.pull(3, -20);   // levantar el cuarto
+ *   chain.release();      // soltar
+ */
+export class SpringChain {
+    readonly y: Float64Array;
+    private v: Float64Array;
+    private ka: number;
+    private kp: number;
+    private kl: number;
+    private c: number;
+    private pulled = -1;
+    private pullTarget = 0;
+    private running = false;
+
+    constructor(
+        readonly size: number,
+        cfg: SpringConfig & {
+            /** Rigidez del eslabón respecto a la del reposo: más alto, la onda llega más lejos. */
+            coupling: number;
+            /** Fuerza con que `pull` sostiene su eslabón, respecto al reposo (por defecto 8). */
+            grip?: number;
+        },
+        private onUpdate: (y: Float64Array) => void,
+    ) {
+        this.y = new Float64Array(size);
+        this.v = new Float64Array(size);
+        const { w0, zeta } = coefficients(cfg);
+        this.ka = w0 * w0;
+        this.kl = this.ka * cfg.coupling;
+        this.c = 2 * zeta * w0;
+        this.kp = this.ka * (cfg.grip ?? 8);
+    }
+
+    /** Lleva el eslabón `index` hacia `target` (como un dedo que lo sostiene). */
+    pull(index: number, target: number): void {
+        this.pulled = index >= 0 && index < this.size ? index : -1;
+        this.pullTarget = target;
+        this.start();
+    }
+
+    release(): void {
+        this.pulled = -1;
+        this.start();
+    }
+
+    /** Golpe seco: suma velocidad a un eslabón (unidades/s). */
+    impulse(index: number, velocity: number): void {
+        if (index < 0 || index >= this.size) return;
+        this.v[index] += velocity;
+        this.start();
+    }
+
+    stop(): void {
+        if (!this.running) return;
+        this.running = false;
+        rafTicker.remove(this.tick);
+    }
+
+    private start(): void {
+        if (this.running) return;
+        this.running = true;
+        this.last = performance.now();
+        rafTicker.add(this.tick);
+    }
+
+    private last = 0;
+
+    /** Avanza la física `dt` segundos en subpasos de 1/240 s (Euler semi-implícito: estable con estas rigideces). */
+    step(dt: number): void {
+        const { y, v, ka, kl, kp, c, size } = this;
+        let remaining = dt;
+        while (remaining > 1e-6) {
+            const h = Math.min(remaining, 1 / 240);
+            remaining -= h;
+            for (let i = 0; i < size; i++) {
+                const left = i > 0 ? y[i - 1] : y[i];
+                const right = i < size - 1 ? y[i + 1] : y[i];
+                let a = -ka * y[i] + kl * (left - 2 * y[i] + right) - c * v[i];
+                if (i === this.pulled) a += kp * (this.pullTarget - y[i]);
+                v[i] += a * h;
+            }
+            for (let i = 0; i < size; i++) y[i] += v[i] * h;
+        }
+    }
+
+    /** En reposo: nadie sostiene la cadena y nada se mueve a la vista. */
+    get atRest(): boolean {
+        if (this.pulled >= 0) return false;
+        for (let i = 0; i < this.size; i++) if (Math.abs(this.y[i]) > 0.05 || Math.abs(this.v[i]) > 0.5) return false;
+        return true;
+    }
+
+    private tick = (): void => {
+        const now = performance.now();
+        const dt = Math.max(0, Math.min((now - this.last) / 1000, 0.064));
+        this.last = now;
+        this.step(dt);
+        if (this.atRest) {
+            this.y.fill(0);
+            this.v.fill(0);
+            this.stop();
+        }
+        this.onUpdate(this.y);
+    };
+}
 
 /**
  * Un número que persigue su destino con física. Cambiar el destino a mitad de
