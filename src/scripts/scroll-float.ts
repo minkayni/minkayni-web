@@ -155,9 +155,14 @@ const enhance = (el: HTMLElement) => {
     /* El titular destacado ya trae su propia capa (desde el centro). */
     if (el.closest("#featured-project")) return;
     const springs = chars.map((c) => c.firstElementChild as HTMLElement);
-    gsap.from(springs, {
-        yPercent: SPRING_LAYER.yPercent,
-        opacity: 0,
+    /* El punto de partida se fija a mano en TODAS las letras: un `from` con
+       stagger y ScrollTrigger solo lo aplicaba a la primera hasta arrancar, y
+       el resto se veía, desaparecía de golpe al llegarle el turno y volvía a
+       subir (un flash). */
+    gsap.set(springs, { yPercent: SPRING_LAYER.yPercent, opacity: 0 });
+    gsap.to(springs, {
+        yPercent: 0,
+        opacity: 1,
         ...CARTOON,
         stagger: { each: SPRING_LAYER.stagger, from: "start" },
         scrollTrigger: {
