@@ -1,0 +1,17 @@
+// Despliegue de la web en Cloudflare Workers (static assets + worker/index.js).
+// Lo construye Workers Builds desde este repositorio; Strapi dispara la
+// reconstrucción con un Deploy Hook al publicar contenido.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "minkayni-web",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page",
+    "run_worker_first": true
+  },
+  "observability": { "enabled": true }
+}
