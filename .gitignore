@@ -27,3 +27,6 @@ package-lock.json
 
 .qodo
 .vscode
+
+# Cloudflare Workers
+.wrangler/
