@@ -18,6 +18,7 @@ import { getCollection } from "astro:content";
 
 import { strapiMediaSrcSet, strapiMediaUrl } from "./media-url";
 import type { Locale } from "../i18n";
+import { aTextoPlano } from "./texto-plano";
 
 const STRAPI_URL = import.meta.env.STRAPI_URL ?? "";
 
@@ -83,12 +84,12 @@ const partirTitular = (linea: string): { titular: string; sobrante: string } => 
 };
 
 const partir = (pie: string) => {
-    const lineas = pie
+    const lineas = aTextoPlano(pie)
         .split(/\r?\n/)
         .map((l) => l.trim())
         .filter(Boolean);
 
-    const etiquetas = [...pie.matchAll(/#([\p{L}\p{N}_]+)/gu)].map((m) => m[1]);
+    const etiquetas = [...aTextoPlano(pie).matchAll(/#([\p{L}\p{N}_]+)/gu)].map((m) => m[1]);
 
     /* El cuerpo es todo menos la primera línea y menos las líneas del final
        que sean solo etiquetas. Se recortan por el final para no perder un
