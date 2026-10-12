@@ -90,7 +90,10 @@ const jsonLd = {
 ---
 
 <PageLayout title={resumen.titulo} description={description} image={portada?.src} imageAlt={portada?.alt}>
-    <article class="mx-auto w-[90%] max-w-[1100px] pb-24 pt-10 sm:pb-32">
+    <!-- El pie de página empieza con una cúpula (DomeSeparator) que invade
+         150 px por encima (300 desde md): el padding inferior le deja sitio
+         para que no tape el llamado a aportar. -->
+    <article class="mx-auto w-[90%] max-w-[1100px] pb-[calc(6rem+150px)] pt-10 md:pb-[calc(8rem+300px)]">
         <nav class="text-sm" aria-label={t("news.backToNews")}>
             <a href={novedades} class="inline-flex items-center gap-1.5 font-bold text-primary underline underline-offset-4 hover:text-secondary-deep">
                 <Icon name="mdi:arrow-left" class="h-4 w-4" aria-hidden="true" />

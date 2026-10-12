@@ -110,7 +110,7 @@ const partnerLogos = (footer.partnersGallery?.files ?? [])
     .filter((f): f is NonNullable<typeof f> & { url: string } => typeof f?.url === "string" && f.url.length > 0)
     .map((f) => ({
         src: strapiMediaUrl(f.url, STRAPI_URL, 440),
-        srcSet: strapiMediaSrcSet(f.url, STRAPI_URL, [220, 440, 660]) || undefined,
+        srcSet: strapiMediaSrcSet(f.url, STRAPI_URL, [220, 440, 660], f.width) || undefined,
         sizes: "220px",
         alt: f.alternativeText?.trim() ?? "",
         width: 220,

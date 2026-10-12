@@ -4,7 +4,7 @@ import { getCollection } from "astro:content";
 import { Image } from "astro:assets";
 
 import reelIcon from "../../assets/icons/reel.png";
-import { PIXEL, strapiMediaSrcSet, strapiMediaUrl } from "../../utils/media-url";
+import { PIXEL, coverScale, strapiMediaSrcSet, strapiMediaUrl } from "../../utils/media-url";
 import { getLocale, useTranslations } from "../../i18n";
 
 const t = useTranslations(getLocale(Astro.url));
@@ -17,7 +17,7 @@ const captionLang = getLocale(Astro.url) === "es" ? undefined : "es";
 const STRAPI_URL = import.meta.env.STRAPI_URL ?? "";
 const posts = await getCollection("posts");
 
-type Media = { url?: string | null; mime?: string | null } | null | undefined;
+type Media = { url?: string | null; mime?: string | null; width?: number | null; height?: number | null } | null | undefined;
 
 /* Vídeo o imagen se decide por el archivo, no por `media_kind`: un reel cuya
    música tiene derechos llega sin vídeo (Meta no lo entrega), y lo que queda
@@ -62,7 +62,11 @@ const items = posts
                 items.map(({ data: post }) => {
                     const { video, image } = pickMedia(post);
                     const mediaUrl = strapiMediaUrl(image?.url, STRAPI_URL, 960);
-                    const mediaSrcSet = strapiMediaSrcSet(image?.url, STRAPI_URL, [320, 640, 960]);
+                    /* Tarjeta cuadrada de 250 px (500 desde md) con `object-cover`:
+                       una foto apaisada se pinta más ancha que la tarjeta. */
+                    const mediaSrcSet = strapiMediaSrcSet(image?.url, STRAPI_URL, [320, 480, 640, 960, 1280, 1600], image?.width);
+                    const k = coverScale(1, image);
+                    const mediaSizes = `(min-width: 768px) ${Math.ceil(500 * k)}px, ${Math.ceil(250 * k)}px`;
                     /* Portada del reel: la miniatura de Meta o un fotograma que
                        el CMS saca al transcodificar, servida por Imagor en WebP
                        a 640 px. Es lo que se ve mientras el vídeo no se
@@ -100,7 +104,7 @@ const items = posts
                                         src={PIXEL}
                                         data-lcp-src={mediaUrl}
                                         data-lcp-srcset={mediaSrcSet || undefined}
-                                        sizes="(min-width: 768px) 400px, 200px"
+                                        sizes={mediaSizes}
                                         alt={post.caption ? "" : t("news.postFallback", { id: post.external_id ?? "" })}
                                         width="960"
                                         height="960"

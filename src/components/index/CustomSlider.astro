@@ -1,7 +1,7 @@
 ---
 import { StrapiBlocks } from "@sensinum/astro-strapi-blocks";
 import type { TeamMemberEntry } from "../../schemas/pages.zod";
-import { PIXEL, strapiMediaSrcSet, strapiMediaUrl } from "../../utils/media-url";
+import { PIXEL, coverScale, strapiMediaSrcSet, strapiMediaUrl } from "../../utils/media-url";
 import { getLocale, useTranslations } from "../../i18n";
 
 const t = useTranslations(getLocale(Astro.url));
@@ -62,15 +62,19 @@ startIdx = startIdx >= 0 ? startIdx : 0;
                 {
                     list.map((m, i) => {
                         /* Las tarjetas miden como mucho 560 px: un `src` de 640 y
-                           variantes para pantallas densas, en vez de 960 fijo. */
+                           variantes hasta 1280 para pantallas 2x. La caja es 3:4
+                           (4:5 desde md); una foto más apaisada se pinta más ancha
+                           que la tarjeta y `sizes` lo tiene en cuenta. */
                         const picture = strapiMediaUrl(m?.picture?.url, STRAPI_URL, 640);
-                        const pictureSet = strapiMediaSrcSet(m?.picture?.url, STRAPI_URL, [400, 640, 960]);
+                        const pictureSet = strapiMediaSrcSet(m?.picture?.url, STRAPI_URL, [480, 640, 960, 1280], m?.picture?.width);
+                        const k = coverScale(3 / 4, m?.picture);
+                        const pictureSizes = `(min-width: 1077px) ${Math.ceil(560 * k)}px, (min-width: 768px) ${Math.ceil(60 * k)}vw, ${Math.ceil(70 * k)}vw`;
                         const color = "#EFEFEF";
                         const name = m?.full_name ?? "";
                         const role = m?.role ?? "";
                         return (
                             <article class="card relative rounded-[24px] overflow-hidden ring-1 ring-black/5 bg-white" data-idx={i} data-name={name} data-role={role} data-org={m?.organization || ""} style={`background:${color}`}>
-                                {picture && <img src={PIXEL} data-lcp-src={picture} data-lcp-srcset={pictureSet || undefined} sizes="(min-width: 1077px) 560px, (min-width: 768px) 60vw, 70vw" alt={name || t("alt.teamMember")} class="absolute inset-0 h-full w-full object-cover [filter:saturate(1.02)]" loading="lazy" decoding="async" />}
+                                {picture && <img src={PIXEL} data-lcp-src={picture} data-lcp-srcset={pictureSet || undefined} sizes={pictureSizes} alt={name || t("alt.teamMember")} class="absolute inset-0 h-full w-full object-cover [filter:saturate(1.02)]" loading="lazy" decoding="async" />}
                                 {m.email && (
                                     <a href={`mailto:${m.email}`} class="badge absolute left-4 bottom-4 z-10 rounded-full backdrop-blur px-3 py-1 text-xs font-medium text-white/95 gradient-custom animate-gradient bg-opacity-20">
                                         {m.email}

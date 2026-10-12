@@ -57,13 +57,13 @@ type Media = { url?: string | null; width?: number | null; height?: number | nul
 export const esImagen = (media: Media): boolean =>
     Boolean(media?.url) && (media?.mime ? media.mime.startsWith("image/") : !/\.(mp4|webm|mov)$/i.test(media?.url ?? ""));
 
-export function imagenDe(media: Media, strapiBase: string, altRespaldo: string, anchos: readonly number[] = [480, 960, 1600]): ImagenActividad | undefined {
+export function imagenDe(media: Media, strapiBase: string, altRespaldo: string, anchos: readonly number[] = [480, 960, 1600, 2200]): ImagenActividad | undefined {
     if (!esImagen(media)) return undefined;
     const src = strapiMediaUrl(media?.url, strapiBase, anchos[anchos.length - 1]);
     if (!src) return undefined;
     return {
         src,
-        srcset: strapiMediaSrcSet(media?.url, strapiBase, anchos),
+        srcset: strapiMediaSrcSet(media?.url, strapiBase, anchos, media?.width),
         ancho: media?.width ?? 1600,
         alto: media?.height ?? 1200,
         alt: media?.alternativeText?.trim() || altRespaldo,

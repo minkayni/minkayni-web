@@ -119,9 +119,9 @@ test("la tarjeta de hover no se sale del marco por los lados", () => {
 test("las fotos del sector salen por el proxy de medios, en dos tamaños", () => {
     const [photo] = sectorPhotos([{ url: "/uploads/guasmo.jpg", alternativeText: "Ensayo en el Guasmo", width: 2000, height: 1200 }], STRAPI, "Foto del sector");
 
-    assert.equal(photo.thumb, `${WEB}/media/guasmo.jpg?w=480&f=webp`);
-    assert.equal(photo.full, `${WEB}/media/guasmo.jpg?w=1600&f=webp`);
-    assert.ok(photo.srcset.includes(`${WEB}/media/guasmo.jpg?w=960&f=webp 960w`));
+    assert.equal(photo.thumb, `${WEB}/media/guasmo.jpg?w=480&f=webp&v=2`);
+    assert.equal(photo.full, `${WEB}/media/guasmo.jpg?w=1600&f=webp&v=2`);
+    assert.ok(photo.srcset.includes(`${WEB}/media/guasmo.jpg?w=960&f=webp&v=2 960w`));
     assert.equal(photo.alt, "Ensayo en el Guasmo");
     assert.equal(photo.width, 2000);
 });
@@ -131,9 +131,9 @@ test("cada sitio donde se ve la foto pide su tamaño, no el mayor", () => {
        grande son cientos de kilobytes por miniatura en el teléfono de quien
        mira. Los recorta Imagor por el proxy /media. */
     const [photo] = sectorPhotos([{ url: "/uploads/guasmo.jpg" }], STRAPI, "Foto del sector");
-    assert.equal(photo.strip, `${WEB}/media/guasmo.jpg?w=160&f=webp`);
-    assert.equal(photo.thumb, `${WEB}/media/guasmo.jpg?w=480&f=webp`);
-    assert.equal(photo.full, `${WEB}/media/guasmo.jpg?w=1600&f=webp`);
+    assert.equal(photo.strip, `${WEB}/media/guasmo.jpg?w=160&f=webp&v=2`);
+    assert.equal(photo.thumb, `${WEB}/media/guasmo.jpg?w=480&f=webp&v=2`);
+    assert.equal(photo.full, `${WEB}/media/guasmo.jpg?w=1600&f=webp&v=2`);
     /* La ampliada NO lleva ancho: es el archivo tal y como se subió, a su
        resolución completa, y solo se pide al ampliar. */
     assert.equal(photo.zoom, `${WEB}/media/guasmo.jpg`);
@@ -157,7 +157,7 @@ test("una foto que el proxy no reconoce no se publica", () => {
         "Foto del sector",
     );
     assert.equal(photos.length, 1);
-    assert.equal(photos[0].full, `${WEB}/media/buena.jpg?w=1600&f=webp`);
+    assert.equal(photos[0].full, `${WEB}/media/buena.jpg?w=1600&f=webp&v=2`);
 });
 
 test("el texto alternativo del CMS manda, y si falta lo pone la página", () => {

@@ -163,7 +163,7 @@ export async function cargarNovedades(locale: Locale): Promise<Novedad[]> {
                 imagen: esImagen
                     ? {
                           src: strapiMediaUrl(fuente, STRAPI_URL, 720),
-                          srcset: strapiMediaSrcSet(fuente, STRAPI_URL, [360, 720, 1080]),
+                          srcset: strapiMediaSrcSet(fuente, STRAPI_URL, [360, 720, 1080], media?.width),
                           /* Si el CMS no guardó las medidas se usa 4:5, la
                              proporción con la que publica la cuenta. */
                           ancho: media?.width ?? 1080,

@@ -96,7 +96,7 @@ export function sectorPhotos(photos: readonly CmsPhoto[] | null | undefined, str
                —varios megas si viene de un teléfono— no la paga quien pasa
                de largo. */
             zoom: strapiMediaUrl(url, strapiBase),
-            srcset: strapiMediaSrcSet(url, strapiBase, VIEWER_WIDTHS),
+            srcset: strapiMediaSrcSet(url, strapiBase, VIEWER_WIDTHS, photo?.width),
             alt: photo?.alternativeText?.trim() || alt,
             /* La leyenda es el campo Caption del archivo, en la biblioteca de
                medios: se escribe una vez y vale allá donde se use esa foto.

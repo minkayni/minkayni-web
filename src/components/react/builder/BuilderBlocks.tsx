@@ -36,7 +36,7 @@ const Title = ({ title, className, accent = "" }: { title: string; className: st
 const CmsPicture = ({ media, alt, widths, sizes, className, strapiUrl }: { media: Media; alt: string; widths: number[]; sizes: string; className: string; strapiUrl: string }) => {
     const url = media?.url ?? "";
     if (!url) return null;
-    const srcSet = strapiMediaSrcSet(url, strapiUrl, widths);
+    const srcSet = strapiMediaSrcSet(url, strapiUrl, widths, media?.width);
     return (
         <img
             src={strapiMediaUrl(url, strapiUrl, widths[widths.length - 1])}

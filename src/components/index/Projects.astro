@@ -39,6 +39,13 @@ const { logoSrc = BatucadaLogo, photoSrc = BatucadaPhoto, content } = Astro.prop
 const d = withFallback({ ...featuredProjectFallback, logo: null as CmsMedia, photo: null as CmsMedia }, content);
 const bodyParagraphs = splitParagraphs(d.body ?? "");
 const stats = (d.stats ?? []).filter((stat) => stat?.value && stat?.label);
+
+/* La foto llena con `object-cover` una columna del 55 % y todo el alto de la
+   pantalla (desde lg) o al menos 520 px: una foto apaisada se pinta más ancha
+   que su columna, y `sizes` debe pedir ese ancho y no el de la columna. */
+const photo = d.photo?.width && d.photo?.height ? d.photo : photoSrc;
+const photoRatio = photo.width && photo.height ? photo.width / photo.height : 1.5;
+const photoSizes = `(min-width: 64em) max(55vw, ${Math.ceil(100 * photoRatio)}vh), max(100vw, ${Math.ceil(520 * photoRatio)}px)`;
 ---
 
 <section id="featured-project" class="relative mt-16 w-full md:mt-24">
@@ -50,8 +57,8 @@ const stats = (d.stats ?? []).filter((stat) => stat?.value && stat?.label);
                 fallback={photoSrc}
                 alt={t("alt.batucadaIntervention")}
                 class="batucada-photo absolute inset-0 h-full w-full object-cover object-center"
-                widths={[720, 1280, 1920]}
-                sizes="(min-width: 64em) 55vw, 100vw"
+                widths={[720, 1280, 1920, 2560]}
+                sizes={photoSizes}
             />
             <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(20,0,35,0.45)_0%,rgba(20,0,35,0.15)_60%,rgba(56,0,88,0.35)_100%)]" aria-hidden="true"></div>
             <div class="wordmark-parallax absolute inset-0 flex items-center justify-center p-8">

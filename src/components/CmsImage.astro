@@ -30,7 +30,7 @@ const { media, fallback, alt = "", class: className, widths = [480, 960, 1600], 
 const STRAPI_BASE = (import.meta.env.STRAPI_URL ?? "").trim();
 const url = media?.url ?? "";
 const cmsSrc = url ? strapiMediaUrl(url, STRAPI_BASE, widths[widths.length - 1]) : "";
-const cmsSrcSet = url ? strapiMediaSrcSet(url, STRAPI_BASE, widths) : "";
+const cmsSrcSet = url ? strapiMediaSrcSet(url, STRAPI_BASE, widths, media?.width) : "";
 const resolvedAlt = alt || media?.alternativeText || "";
 ---
 

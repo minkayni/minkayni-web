@@ -94,6 +94,13 @@ function isRecognizedOrigin(src: string, sourceUrl: URL, base: string): boolean 
     return !isAbsolute || sourceUrl.origin === base || sourceUrl.origin === mediaOrigin() || LEGACY_MEDIA_HOSTS.has(sourceUrl.hostname.toLowerCase());
 }
 
+/* Versión del recorte que hay detrás de `?w=`. Cloudflare, el Nginx de la web
+   y el navegador guardan cada URL treinta días como `immutable`: si el CDN
+   cambia lo que devuelve para el mismo `?w=`, solo una URL nueva lo hace
+   visible. v2: `w` acota solo el ancho (antes, un cuadrado de w×w, y una foto
+   vertical pedida a 640 llegaba con 427 px de ancho). */
+const MEDIA_TRANSFORM_VERSION = 2;
+
 export function strapiMediaUrl(src: string | null | undefined, strapiBase: string, width = 0): string {
     if (!src) return "";
     if (hasTraversal(src)) return "";
@@ -119,19 +126,34 @@ export function strapiMediaUrl(src: string | null | undefined, strapiBase: strin
     const url = `${mediaOrigin()}/media/${key.replace(/^uploads\//, "")}`;
     const safeWidth = Math.min(Math.max(Math.trunc(width), 16), 3840);
     if (!(width > 0 && RASTER_IMAGE.test(key))) return url;
-    return CONVERT_TO_WEBP.test(key) ? `${url}?w=${safeWidth}&f=webp` : `${url}?w=${safeWidth}`;
+    const format = CONVERT_TO_WEBP.test(key) ? "&f=webp" : "";
+    return `${url}?w=${safeWidth}${format}&v=${MEDIA_TRANSFORM_VERSION}`;
 }
 
-export function strapiMediaSrcSet(src: string | null | undefined, strapiBase: string, widths: readonly number[]): string {
+/** `srcset` del proxy de medios. Con `intrinsicWidth` (el `width` del archivo
+ *  en Strapi) no anuncia anchos que el original no tiene: el CDN nunca amplía,
+ *  y un `1600w` que en realidad mide 1080 hace que el navegador lo estire. */
+export function strapiMediaSrcSet(src: string | null | undefined, strapiBase: string, widths: readonly number[], intrinsicWidth?: number | null): string {
     const original = strapiMediaUrl(src, strapiBase);
     if (!original.startsWith(`${mediaOrigin()}/media/`)) return "";
     if (!RASTER_IMAGE.test(new URL(original).pathname)) return "";
 
-    return [...new Set(widths)]
+    const cap = intrinsicWidth && intrinsicWidth >= 16 ? Math.trunc(intrinsicWidth) : Infinity;
+    return [...new Set(widths.map((width) => Math.min(width, cap)))]
         .filter((width) => Number.isInteger(width) && width >= 16 && width <= 3840)
         .sort((a, b) => a - b)
         .map((width) => `${strapiMediaUrl(src, strapiBase, width)} ${width}w`)
         .join(", ");
+}
+
+/** Cuánto más ancha se pinta una foto con `object-cover` que su caja. Si la
+ *  foto es más apaisada que la caja, `cover` la ajusta por el alto y se sale
+ *  por los lados: una foto 3:2 en una caja cuadrada de 500 px se pinta a
+ *  750 px de ancho, y un `sizes` de 500px pediría una versión pequeña. */
+export function coverScale(boxRatio: number, media?: { width?: number | null; height?: number | null } | null): number {
+    const { width, height } = media ?? {};
+    if (!width || !height || !(boxRatio > 0)) return 1;
+    return Math.max(1, width / height / boxRatio);
 }
 
 /* GIF transparente de 1×1 para el `src` de las imágenes que se piden después

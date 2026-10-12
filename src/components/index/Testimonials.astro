@@ -29,8 +29,10 @@ const STRAPI_URL = import.meta.env.STRAPI_URL;
         {
             testimonials.map((t, i) => {
                 const leftAlign = i % 2 === 0;
-                /* El blob se pinta a unos 500 px; a 1200 el retrato de Daniel eran 500 KB. */
-                const picture = strapiMediaUrl(t?.picture?.url, STRAPI_URL, 800);
+                /* El retrato llena media columna del 80 % (~770 px en una pantalla
+                   de 1920). Es una <image> de SVG, sin srcset: un único tamaño
+                   algo por encima de 1x. */
+                const picture = strapiMediaUrl(t?.picture?.url, STRAPI_URL, 1200);
                 return (
                     <section class={"t-slide absolute inset-0 flex items-center justify-between gap-8 opacity-0 pointer-events-none " + (leftAlign ? "flex-row" : "flex-row-reverse")} data-slide>
                         <div class="t-blob-wrap shrink-0 w-1/2" data-blob-wrap>

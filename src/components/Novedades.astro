@@ -86,7 +86,7 @@ const jsonLd = {
 {/* `data-cms-empty` marca una build sin publicaciones del CMS (local sin
     Strapi). La auditoría de Ad Grants (tests/ad-grants.test.ts) lo lee para
     no juzgar la cantidad de contenido de una página cuyo cuerpo no llegó. */}
-<div class="mx-auto w-[90%] max-w-[1100px] py-16 sm:py-24" data-cms-empty={novedades.length === 0 && actividades.length === 0 ? "" : undefined}>
+<div class="mx-auto w-[90%] max-w-[1100px] pb-[calc(4rem+150px)] pt-16 sm:pt-24 md:pb-[calc(6rem+300px)]" data-cms-empty={novedades.length === 0 && actividades.length === 0 ? "" : undefined}>
     <header class="max-w-[70ch]">
         <p class="mb-4 text-sm font-bold uppercase tracking-[0.22em] text-primary">{t("news.eyebrow")}</p>
         <p class="text-lg leading-relaxed text-black/75">{t("news.lead")}</p>
