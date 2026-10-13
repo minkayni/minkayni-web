@@ -5,6 +5,7 @@ import test from "node:test";
 
 import { actividadesRelacionadas, actividadPrincipal, aniosDe, enlaceMapa, esPublicable, formatearFechas, marcasDe, ordenarActividades, resumirActividad } from "../src/utils/actividades-core";
 import { alternatePaths, localizePath, stripLocale } from "../src/i18n";
+import { blockImageUrls, normalizeBlocks } from "../src/components/react/builder/normalize";
 
 const base = { slug: "taller", title: "Taller", date: "2026-09-12", brand: "batucada" as const, summary: "Resumen", publishedAt: "2026-09-13T00:00:00Z" };
 
@@ -93,4 +94,15 @@ test("el resumen guarda las publicaciones de redes que cuentan la actividad", ()
         "https://strapi.example.org"
     );
     assert.deepEqual(r.publicaciones, ["abc", "https://www.instagram.com/p/X/", "https://www.tiktok.com/@minkayni/video/1"]);
+});
+
+test("las fotos del cuerpo se reconocen para no repetirlas en la galería", () => {
+    const foto = (url: string) => ({ url });
+    const bloques = normalizeBlocks([
+        { __component: "blocks.media", image: foto("/media/uploads/a.jpg") },
+        { __component: "blocks.media-text", body: "x", image: foto("/media/uploads/b.jpg") },
+        { __component: "blocks.gallery", images: [foto("/media/uploads/c.jpg"), foto("/media/uploads/d.jpg")] },
+        { __component: "blocks.rich-text", body: "texto" },
+    ]);
+    assert.deepEqual(blockImageUrls(bloques), ["/media/uploads/a.jpg", "/media/uploads/b.jpg", "/media/uploads/c.jpg", "/media/uploads/d.jpg"]);
 });

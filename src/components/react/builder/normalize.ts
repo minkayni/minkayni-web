@@ -186,6 +186,14 @@ export function normalizeBlocks(raw: unknown): Block[] {
     return (Array.isArray(raw) ? raw : []).map(normalizeBlock).filter((b): b is Block => b !== null);
 }
 
+/** URL de todas las fotos que pintan los bloques (imagen, foto y texto,
+ *  galería): la galería del final de una actividad no las repite. */
+export const blockImageUrls = (blocks: Block[]): string[] =>
+    blocks
+        .flatMap((block) => (block.type === "media" || block.type === "mediaText" ? [block.image] : block.type === "gallery" ? block.images : []))
+        .map((media) => media?.url)
+        .filter((url): url is string => Boolean(url));
+
 /**
  * Convierte a HTML el Markdown de los bloques que lo llevan (texto y foto
  * con texto). Quien llama pone el conversor: en build, el pipeline del

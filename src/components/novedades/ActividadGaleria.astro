@@ -11,16 +11,18 @@ interface Props {
     fotos: ViewerPhoto[];
     titulo: string;
     locale: Locale;
+    /** Solo trae las fotos que no salieron arriba: se titula «Más fotos». */
+    restantes?: boolean;
 }
 
-const { fotos, titulo, locale } = Astro.props;
+const { fotos, titulo, locale, restantes = false } = Astro.props;
 const t = useTranslations(locale);
 ---
 
 <section id="galeria" class="mt-20 scroll-mt-28" aria-labelledby="actividad-galeria">
     <div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <h2 id="actividad-galeria" class="font-display text-3xl font-black leading-tight text-black sm:text-4xl">
-            {t("news.gallery")}
+            {restantes ? t("news.morePhotos") : t("news.gallery")}
             <span class="ml-1 align-middle font-sans text-base font-bold text-black/45">{t("news.photoCount", { count: fotos.length })}</span>
         </h2>
         <button

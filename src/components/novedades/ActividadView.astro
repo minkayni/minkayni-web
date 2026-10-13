@@ -8,7 +8,7 @@
    propios componentes. */
 import PageLayout from "../../layouts/PageLayout.astro";
 import BuilderBlocks from "../react/builder/BuilderBlocks";
-import { normalizeBlocks, renderBlocksMarkdown } from "../react/builder/normalize";
+import { blockImageUrls, normalizeBlocks, renderBlocksMarkdown } from "../react/builder/normalize";
 import { Icon } from "astro-icon/components";
 import ActividadCard from "./ActividadCard.astro";
 import ActividadCompartir from "./ActividadCompartir.astro";
@@ -44,9 +44,14 @@ const STRAPI_URL = (import.meta.env.STRAPI_URL ?? "").trim();
 const blocks = await renderBlocksMarkdown(normalizeBlocks(actividad.sections), renderMarkdown);
 
 const portada = imagenDe(actividad.cover, STRAPI_URL, resumen.titulo, [640, 1080, 1600, 2200]);
-const galeria = (actividad.gallery ?? []).filter(esImagen);
+/* La galería del final no repite lo que ya se vio arriba (portada y fotos del
+   cuerpo): solo trae las demás. Si el cuerpo ya las usa todas, no sale. */
+const yaVistas = new Set([actividad.cover?.url, ...blockImageUrls(blocks)].filter(Boolean));
+const galeriaCompleta = (actividad.gallery ?? []).filter(esImagen);
+const galeria = galeriaCompleta.filter((foto) => !yaVistas.has(foto?.url));
 const fotos = cmsPhotos(galeria, STRAPI_URL, resumen.titulo, 40);
 const conGaleria = fotos.length > 1;
+const soloRestantes = galeria.length < galeriaCompleta.length;
 const videos = [actividad.video, ...(actividad.gallery ?? [])]
     .filter((m, i, lista) => m?.url && m.mime?.startsWith("video/") && lista.findIndex((x) => x?.url === m.url) === i)
     .map((m) => strapiMediaUrl(m?.url, STRAPI_URL))
@@ -164,14 +169,18 @@ const ENLACE = "font-bold text-primary underline underline-offset-4 hover:text-s
                         </dd>
                     </div>
                     {
-                        conGaleria && (
+                        galeriaCompleta.length > 1 && (
                             <div>
                                 <dt class={DT}>{t("news.factPhotos")}</dt>
                                 <dd class="mt-1 flex items-start gap-2">
                                     <Icon name="mdi:image-multiple-outline" class="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-                                    <a href="#galeria" class={ENLACE}>
-                                        {t("news.photoCount", { count: fotos.length })}
-                                    </a>
+                                    {conGaleria ? (
+                                        <a href="#galeria" class={ENLACE}>
+                                            {t("news.photoCount", { count: galeriaCompleta.length })}
+                                        </a>
+                                    ) : (
+                                        <span>{t("news.photoCount", { count: galeriaCompleta.length })}</span>
+                                    )}
                                 </dd>
                             </div>
                         )
@@ -228,7 +237,7 @@ const ENLACE = "font-bold text-primary underline underline-offset-4 hover:text-s
             )
         }
 
-        {conGaleria && <ActividadGaleria {fotos} titulo={resumen.titulo} {locale} />}
+        {conGaleria && <ActividadGaleria {fotos} titulo={resumen.titulo} {locale} restantes={soloRestantes} />}
 
         <ActividadRedes {actividad} {locale} />
 
