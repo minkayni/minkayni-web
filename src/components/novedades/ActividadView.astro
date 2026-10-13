@@ -7,7 +7,7 @@
    su propio ancho. Galería, redes y botones de compartir viven en sus
    propios componentes. */
 import PageLayout from "../../layouts/PageLayout.astro";
-import BuilderBlocks from "../react/builder/BuilderBlocks";
+import BuilderBlocks, { READING } from "../react/builder/BuilderBlocks";
 import { blockImageUrls, normalizeBlocks, renderBlocksMarkdown } from "../react/builder/normalize";
 import { Icon } from "astro-icon/components";
 import ActividadCard from "./ActividadCard.astro";
@@ -160,7 +160,7 @@ const ENLACE = "font-bold text-primary underline underline-offset-4 hover:text-s
         {/* Columna de lectura: la misma que el texto del cuerpo (READING en
             BuilderBlocks), centrada. Alineada a la izquierda en un contenedor
             de 1100 px dejaba vacía casi la mitad derecha de la página. */}
-        <header class:list={["mx-auto max-w-[36rem]", portada && "mt-10"]}>
+        <header class:list={[READING, portada && "mt-10"]}>
             <nav class="text-sm" aria-label={t("news.backToNews")}>
                 <a href={novedades} class="group inline-flex items-center gap-1.5 font-bold text-primary underline-offset-4 hover:underline">
                     <Icon name="mdi:arrow-left" class="h-4 w-4 spring group-hover:-translate-x-1" aria-hidden="true" />
@@ -175,9 +175,10 @@ const ENLACE = "font-bold text-primary underline underline-offset-4 hover:text-s
 
             {/* La ficha es una línea de datos, como la firma de una crónica:
                 el icono ya dice qué es cada dato y la etiqueta queda para el
-                lector de pantalla. El proyecto no se repite: lo dice la
-                píldora de arriba. */}
-            <dl class="mt-6 flex flex-wrap gap-x-6 gap-y-3 border-y border-black/10 py-4 text-base text-black/75" aria-label={t("news.factsLabel")}>
+                lector de pantalla. Sin rayas alrededor (la hacían parecer un
+                formulario): fecha y fotos en una fila, el lugar debajo. El
+                proyecto no se repite: lo dice la píldora de arriba. */}
+            <dl class="mt-7 flex flex-wrap items-start gap-x-6 gap-y-2 text-base text-black/70" aria-label={t("news.factsLabel")}>
                 <div>
                     <dt class="sr-only">{t("news.factDate")}</dt>
                     <dd class="flex items-start gap-2">
@@ -185,24 +186,6 @@ const ENLACE = "font-bold text-primary underline underline-offset-4 hover:text-s
                         <span><time datetime={resumen.fechaIso} class="font-bold text-black">{resumen.fechaTexto}</time></span>
                     </dd>
                 </div>
-                {
-                    resumen.lugar && (
-                        <div>
-                            <dt class="sr-only">{t("news.factPlace")}</dt>
-                            <dd class="flex items-start gap-2">
-                                <Icon name="mdi:map-marker-outline" class={ICONO} aria-hidden="true" />
-                                <span>
-                                {resumen.lugar}
-                                {mapa && (
-                                    <a href={mapa} target="_blank" rel="noopener noreferrer" class:list={["ml-2 text-sm", ENLACE]}>
-                                        {t("news.seeOnMap")} ↗
-                                    </a>
-                                )}
-                                </span>
-                            </dd>
-                        </div>
-                    )
-                }
                 {
                     galeriaCompleta.length > 1 && (
                         <div>
@@ -235,8 +218,26 @@ const ENLACE = "font-bold text-primary underline underline-offset-4 hover:text-s
                     )
                 }
                 {
-                    gruposAliados.map((grupo) => (
+                    resumen.lugar && (
                         <div class="basis-full">
+                            <dt class="sr-only">{t("news.factPlace")}</dt>
+                            <dd class="flex items-start gap-2">
+                                <Icon name="mdi:map-marker-outline" class={ICONO} aria-hidden="true" />
+                                <span>
+                                    {resumen.lugar}
+                                    {mapa && (
+                                        <a href={mapa} target="_blank" rel="noopener noreferrer" class:list={["ml-2 text-sm", ENLACE]}>
+                                            {t("news.seeOnMap")} ↗
+                                        </a>
+                                    )}
+                                </span>
+                            </dd>
+                        </div>
+                    )
+                }
+                {
+                    gruposAliados.map((grupo) => (
+                        <div class="mt-3 basis-full">
                             <dt class="text-sm font-bold text-black/50">{grupo.titulo}</dt>
                             <dd class="mt-2">
                                 <ul class="flex list-none flex-wrap items-center gap-x-5 gap-y-3 p-0">
@@ -270,23 +271,25 @@ const ENLACE = "font-bold text-primary underline underline-offset-4 hover:text-s
                     ))
                 }
             </dl>
-
-            {
-                resumen.etiquetas.length > 0 && (
-                    <ul class="mt-5 flex list-none flex-wrap gap-2 p-0" aria-label={t("news.tags")}>
-                        {resumen.etiquetas.map((etiqueta) => (
-                            <li class="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">#{etiqueta}</li>
-                        ))}
-                    </ul>
-                )
-            }
         </header>
 
         {
             blocks.length > 0 && (
-                <div class="mt-4">
+                <div class="mt-6">
                     <BuilderBlocks blocks={blocks} strapiUrl={STRAPI_URL} variant="article" labels={blockLabels(t)} />
                 </div>
+            )
+        }
+
+        {/* Los temas cierran el texto en vez de abrirlo: arriba competían con
+            el resumen y partían la cabecera en dos filas de píldoras. */}
+        {
+            resumen.etiquetas.length > 0 && (
+                <ul class:list={[READING, "mt-8 flex list-none flex-wrap gap-2 p-0"]} aria-label={t("news.tags")}>
+                    {resumen.etiquetas.map((etiqueta) => (
+                        <li class="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">#{etiqueta}</li>
+                    ))}
+                </ul>
             )
         }
 
