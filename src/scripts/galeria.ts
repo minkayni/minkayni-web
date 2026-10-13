@@ -58,31 +58,31 @@ function initGallery(gallery: HTMLElement): void {
         void open(Number(link.dataset.galleryPhoto), link, link.href);
     });
 
-    /* «Ver en pantalla completa», si la sección lo trae: sin JS no sirve, así
-       que sale oculto y se muestra aquí. */
+    /* «Ver en pantalla completa», si la sección lo trae. */
     const button = gallery.closest("section")?.querySelector<HTMLButtonElement>("[data-gallery-open]");
-    if (button) {
-        button.hidden = false;
-        button.addEventListener("click", () => void open(0, button));
-    }
+    if (button) arm(button, open);
 
     gallery.addEventListener("pointerover", preload, { once: true });
     gallery.addEventListener("focusin", preload, { once: true });
 }
 
-/* Un botón que trae sus propias fotos (`data-gallery` en el botón, como el
-   «9 fotos» de la ficha de una actividad). Sale `hidden`: sin JavaScript no
-   abriría nada, y en su lugar queda el texto que lo acompaña
-   (`data-gallery-fallback`). */
-function initTrigger(button: HTMLButtonElement): void {
-    button.dataset.galleryReady = "";
-    const open = opener(button);
-    if (!open) return;
+/* Un botón que abre el visor desde la primera foto. Sale `hidden` del
+   servidor (sin JavaScript no abriría nada) y aquí se muestra; si lo
+   acompaña un texto para ese caso (`data-gallery-fallback`), se oculta. */
+function arm(button: HTMLButtonElement, open: Open): void {
     button.parentElement?.querySelector<HTMLElement>("[data-gallery-fallback]")?.setAttribute("hidden", "");
     button.hidden = false;
     button.addEventListener("click", () => void open(0, button));
     button.addEventListener("pointerover", preload, { once: true });
     button.addEventListener("focus", preload, { once: true });
+}
+
+/* Un botón que trae sus propias fotos (`data-gallery` en el botón, como el
+   «9 fotos» de la ficha de una actividad). */
+function initTrigger(button: HTMLButtonElement): void {
+    button.dataset.galleryReady = "";
+    const open = opener(button);
+    if (open) arm(button, open);
 }
 
 /** Arranca las galerías de la página que aún no lo estén. */

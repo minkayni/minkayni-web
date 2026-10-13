@@ -128,7 +128,8 @@ const jsonLd = {
     },
 };
 
-const DT = "text-sm font-bold text-black/50";
+const ICONO = "mt-0.5 h-5 w-5 shrink-0 text-primary";
+const cuentaFotos = t("news.photoCount", { count: galeriaCompleta.length });
 const ENLACE = "font-bold text-primary underline underline-offset-4 hover:text-secondary-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 ---
 
@@ -156,74 +157,96 @@ const ENLACE = "font-bold text-primary underline underline-offset-4 hover:text-s
             )
         }
 
-        <nav class:list={["text-sm", portada && "mt-8"]} aria-label={t("news.backToNews")}>
-            <a href={novedades} class="group inline-flex items-center gap-1.5 font-bold text-primary underline-offset-4 hover:underline">
-                <Icon name="mdi:arrow-left" class="h-4 w-4 spring group-hover:-translate-x-1" aria-hidden="true" />
-                {t("news.backToNews")}
-            </a>
-        </nav>
+        {/* Columna de lectura: la misma que el texto del cuerpo (READING en
+            BuilderBlocks), centrada. Alineada a la izquierda en un contenedor
+            de 1100 px dejaba vacía casi la mitad derecha de la página. */}
+        <header class:list={["mx-auto max-w-[36rem]", portada && "mt-10"]}>
+            <nav class="text-sm" aria-label={t("news.backToNews")}>
+                <a href={novedades} class="group inline-flex items-center gap-1.5 font-bold text-primary underline-offset-4 hover:underline">
+                    <Icon name="mdi:arrow-left" class="h-4 w-4 spring group-hover:-translate-x-1" aria-hidden="true" />
+                    {t("news.backToNews")}
+                </a>
+            </nav>
+            <p class="mt-8 flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-[0.18em]">
+                <span class:list={["rounded-full px-3 py-1", resumen.marca === "batucada" ? "bg-accent/25 text-black" : "bg-primary/10 text-primary"]}>{marca}</span>
+                {resumen.proyecto && resumen.proyecto !== marca && <span class="rounded-full bg-black/5 px-3 py-1 text-black/70">{resumen.proyecto}</span>}
+            </p>
+            {resumen.resumen && <p class="mt-6 text-xl leading-relaxed text-black/80 sm:text-2xl sm:leading-relaxed">{resumen.resumen}</p>}
 
-        <header class="mt-8">
-            <div class="max-w-[70ch]">
-                <p class="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-[0.18em]">
-                    <span class:list={["rounded-full px-3 py-1", resumen.marca === "batucada" ? "bg-accent/25 text-black" : "bg-primary/10 text-primary"]}>{marca}</span>
-                    {resumen.proyecto && resumen.proyecto !== marca && <span class="rounded-full bg-black/5 px-3 py-1 text-black/70">{resumen.proyecto}</span>}
-                </p>
-                {resumen.resumen && <p class="mt-6 text-xl leading-relaxed text-black/80 sm:text-2xl sm:leading-relaxed">{resumen.resumen}</p>}
+            {/* La ficha es una línea de datos, como la firma de una crónica:
+                el icono ya dice qué es cada dato y la etiqueta queda para el
+                lector de pantalla. El proyecto no se repite: lo dice la
+                píldora de arriba. */}
+            <dl class="mt-6 flex flex-wrap gap-x-6 gap-y-3 border-y border-black/10 py-4 text-base text-black/75" aria-label={t("news.factsLabel")}>
+                <div>
+                    <dt class="sr-only">{t("news.factDate")}</dt>
+                    <dd class="flex items-start gap-2">
+                        <Icon name="mdi:calendar-blank-outline" class={ICONO} aria-hidden="true" />
+                        <span><time datetime={resumen.fechaIso} class="font-bold text-black">{resumen.fechaTexto}</time></span>
+                    </dd>
+                </div>
                 {
-                    resumen.etiquetas.length > 0 && (
-                        <ul class="mt-6 flex list-none flex-wrap gap-2 p-0" aria-label={t("news.tags")}>
-                            {resumen.etiquetas.map((etiqueta) => (
-                                <li class="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">#{etiqueta}</li>
-                            ))}
-                        </ul>
+                    resumen.lugar && (
+                        <div>
+                            <dt class="sr-only">{t("news.factPlace")}</dt>
+                            <dd class="flex items-start gap-2">
+                                <Icon name="mdi:map-marker-outline" class={ICONO} aria-hidden="true" />
+                                <span>
+                                {resumen.lugar}
+                                {mapa && (
+                                    <a href={mapa} target="_blank" rel="noopener noreferrer" class:list={["ml-2 text-sm", ENLACE]}>
+                                        {t("news.seeOnMap")} ↗
+                                    </a>
+                                )}
+                                </span>
+                            </dd>
+                        </div>
                     )
                 }
-            </div>
-
-            {/* La ficha va en franja bajo el resumen: de lado dejaba un hueco
-                bajo el texto y empujaba el cuerpo hacia abajo. */}
-            <aside class="mt-10 rounded-3xl bg-white/70 p-6 shadow-sm ring-1 ring-black/5 sm:p-7" aria-label={t("news.factsLabel")}>
-                <dl class="grid gap-5 text-base text-black/80 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
-                    <div>
-                        <dt class={DT}>{t("news.factDate")}</dt>
-                        <dd class="mt-1 flex items-start gap-2">
-                            <Icon name="mdi:calendar-blank-outline" class="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-                            <time datetime={resumen.fechaIso} class="font-bold text-black">{resumen.fechaTexto}</time>
-                        </dd>
-                    </div>
-                    {
-                        resumen.lugar && (
-                            <div>
-                                <dt class={DT}>{t("news.factPlace")}</dt>
-                                <dd class="mt-1 flex items-start gap-2">
-                                    <Icon name="mdi:map-marker-outline" class="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-                                    <span>
-                                        {resumen.lugar}
-                                        {mapa && (
-                                            <a href={mapa} target="_blank" rel="noopener noreferrer" class:list={["mt-1 block text-sm", ENLACE]}>
-                                                {t("news.seeOnMap")} ↗
-                                            </a>
-                                        )}
-                                    </span>
-                                </dd>
-                            </div>
-                        )
-                    }
-                    <div>
-                        <dt class={DT}>{t("news.factProject")}</dt>
-                        <dd class="mt-1 flex items-start gap-2">
-                            <Icon name="mdi:hand-heart-outline" class="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-                            <span>{resumen.proyecto && resumen.proyecto !== marca ? `${resumen.proyecto} · ${marca}` : marca}</span>
-                        </dd>
-                    </div>
-                    {
-                        gruposAliados.map((grupo) => (
-                            <div class="sm:col-span-2">
-                                <dt class={DT}>{grupo.titulo}</dt>
-                                <dd class="mt-2">
-                                    <ul class="flex list-none flex-wrap items-center gap-x-5 gap-y-3 p-0">
-                                        {grupo.lista.map((a) => (
+                {
+                    galeriaCompleta.length > 1 && (
+                        <div>
+                            <dt class="sr-only">{t("news.factPhotos")}</dt>
+                            <dd class="flex items-start gap-2">
+                                <Icon name="mdi:image-multiple-outline" class={ICONO} aria-hidden="true" />
+                                <span>
+                                {conGaleria ? (
+                                    <a href="#galeria" class={ENLACE}>
+                                        {cuentaFotos}
+                                    </a>
+                                ) : (
+                                    <>
+                                        <span data-gallery-fallback>{cuentaFotos}</span>
+                                        <button
+                                            type="button"
+                                            hidden
+                                            class:list={["cursor-pointer border-0 bg-transparent p-0 text-left", ENLACE]}
+                                            data-gallery={JSON.stringify(todasLasFotos)}
+                                            data-gallery-strings={JSON.stringify(viewerStrings(t))}
+                                            data-gallery-caption={resumen.titulo}
+                                        >
+                                            {cuentaFotos}
+                                        </button>
+                                    </>
+                                )}
+                                </span>
+                            </dd>
+                        </div>
+                    )
+                }
+                {
+                    gruposAliados.map((grupo) => (
+                        <div class="basis-full">
+                            <dt class="text-sm font-bold text-black/50">{grupo.titulo}</dt>
+                            <dd class="mt-2">
+                                <ul class="flex list-none flex-wrap items-center gap-x-5 gap-y-3 p-0">
+                                    {grupo.lista.map((a) => {
+                                        const firma = a.logo ? (
+                                            <img src={a.logo} alt={a.nombre} height={LOGO_ALTO} width={a.ancho} class="h-10 w-auto max-w-[9rem] object-contain" loading="lazy" decoding="async" />
+                                        ) : (
+                                            <span class:list={["font-bold text-black", a.url && "underline underline-offset-4"]}>{a.nombre}</span>
+                                        );
+                                        return (
                                             <li>
                                                 {a.url ? (
                                                     <a
@@ -233,59 +256,30 @@ const ENLACE = "font-bold text-primary underline underline-offset-4 hover:text-s
                                                         class="block rounded-md spring hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
                                                         aria-label={a.nombre}
                                                     >
-                                                        {a.logo ? (
-                                                            <img src={a.logo} alt={a.nombre} height={LOGO_ALTO} width={a.ancho} class="h-10 w-auto max-w-[9rem] object-contain" loading="lazy" decoding="async" />
-                                                        ) : (
-                                                            <span class="font-bold text-black underline underline-offset-4">{a.nombre}</span>
-                                                        )}
+                                                        {firma}
                                                     </a>
-                                                ) : a.logo ? (
-                                                    <img src={a.logo} alt={a.nombre} height={LOGO_ALTO} width={a.ancho} class="h-10 w-auto max-w-[9rem] object-contain" loading="lazy" decoding="async" />
                                                 ) : (
-                                                    <span class="font-bold text-black">{a.nombre}</span>
+                                                    firma
                                                 )}
                                             </li>
-                                        ))}
-                                    </ul>
-                                </dd>
-                            </div>
-                        ))
-                    }
-                    {
-                        galeriaCompleta.length > 1 && (
-                            <div>
-                                <dt class={DT}>{t("news.factPhotos")}</dt>
-                                <dd class="mt-1 flex items-start gap-2">
-                                    <Icon name="mdi:image-multiple-outline" class="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-                                    {conGaleria ? (
-                                        <a href="#galeria" class={ENLACE}>
-                                            {t("news.photoCount", { count: galeriaCompleta.length })}
-                                        </a>
-                                    ) : (
-                                        <span>
-                                            <span data-gallery-fallback>{t("news.photoCount", { count: galeriaCompleta.length })}</span>
-                                            <button
-                                                type="button"
-                                                hidden
-                                                class:list={["cursor-pointer border-0 bg-transparent p-0 text-left", ENLACE]}
-                                                data-gallery={JSON.stringify(todasLasFotos)}
-                                                data-gallery-strings={JSON.stringify(viewerStrings(t))}
-                                                data-gallery-caption={resumen.titulo}
-                                            >
-                                                {t("news.photoCount", { count: galeriaCompleta.length })}
-                                            </button>
-                                        </span>
-                                    )}
-                                </dd>
-                            </div>
-                        )
-                    }
-                </dl>
-                <div class="mt-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t border-black/10 pt-5">
-                    <p class={DT}>{t("news.share")}</p>
-                    <ActividadCompartir {url} titulo={resumen.titulo} {locale} compacto />
-                </div>
-            </aside>
+                                        );
+                                    })}
+                                </ul>
+                            </dd>
+                        </div>
+                    ))
+                }
+            </dl>
+
+            {
+                resumen.etiquetas.length > 0 && (
+                    <ul class="mt-5 flex list-none flex-wrap gap-2 p-0" aria-label={t("news.tags")}>
+                        {resumen.etiquetas.map((etiqueta) => (
+                            <li class="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">#{etiqueta}</li>
+                        ))}
+                    </ul>
+                )
+            }
         </header>
 
         {
@@ -296,19 +290,9 @@ const ENLACE = "font-bold text-primary underline underline-offset-4 hover:text-s
             )
         }
 
-        {/* Compartir y los posts en redes, en un solo bloque: antes eran dos
-            tarjetas seguidas, una de ellas con un único botón. */}
-        <section class="mt-14 rounded-3xl bg-primary/[0.06] px-6 py-6 sm:px-8" aria-labelledby="actividad-compartir">
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <h2 id="actividad-compartir" class="font-display text-xl font-black text-black sm:text-2xl">{t("news.shareTitle")}</h2>
-                <ActividadCompartir {url} titulo={resumen.titulo} {locale} />
-            </div>
-            <ActividadRedes {actividad} {locale} />
-        </section>
-
         {
             videos.length > 0 && (
-                <section class="mt-20" aria-labelledby="actividad-video">
+                <section class="mt-16" aria-labelledby="actividad-video">
                     <h2 id="actividad-video" class="font-display text-3xl font-black leading-tight text-black sm:text-4xl">{t("news.video")}</h2>
                     <div class:list={["mt-6 grid gap-6", videos.length > 1 && "md:grid-cols-2"]}>
                         {videos.map((src) => (
@@ -321,20 +305,28 @@ const ENLACE = "font-bold text-primary underline underline-offset-4 hover:text-s
 
         {conGaleria && <ActividadGaleria {fotos} titulo={resumen.titulo} {locale} restantes={soloRestantes} />}
 
-        <section class="mt-16 grid gap-6 rounded-3xl border border-black/10 bg-white/50 px-8 py-10 sm:px-12 md:grid-cols-[1fr_auto] md:items-end" aria-labelledby="actividad-sobre">
-            <div class="max-w-[36rem]">
-                <h2 id="actividad-sobre" class="font-display text-2xl font-black leading-tight text-black sm:text-3xl">{t(`news.aboutTitle.${resumen.marca}`)}</h2>
-                <p class="mt-4 text-lg leading-relaxed text-black/75">{t(`news.aboutBody.${resumen.marca}`)}</p>
-            </div>
-            <a href={localizePath(resumen.marca === "batucada" ? "/projects/batucada-popular/" : "/about", locale)} class:list={["group inline-flex items-center gap-1.5", ENLACE]}>
-                {t(`news.aboutLink.${resumen.marca}`)}
-                <Icon name="mdi:arrow-right" class="h-4 w-4 spring group-hover:translate-x-1" aria-hidden="true" />
-            </a>
-        </section>
+        {/* Cierre: compartir (con los posts en redes) y de quién es la
+            actividad, uno al lado del otro. Apilados eran dos tarjetas a todo
+            el ancho con media tarjeta vacía cada una. */}
+        <div class="mt-16 grid gap-6 lg:grid-cols-2">
+            <section class="flex flex-col gap-5 rounded-3xl bg-primary/[0.06] px-6 py-8 sm:px-8" aria-labelledby="actividad-compartir">
+                <h2 id="actividad-compartir" class="font-display text-2xl font-black leading-tight text-black">{t("news.shareTitle")}</h2>
+                <ActividadCompartir {url} titulo={resumen.titulo} {locale} />
+                <ActividadRedes {actividad} {locale} />
+            </section>
+            <section class="flex flex-col gap-4 rounded-3xl border border-black/10 bg-white/50 px-6 py-8 sm:px-8" aria-labelledby="actividad-sobre">
+                <h2 id="actividad-sobre" class="font-display text-2xl font-black leading-tight text-black">{t(`news.aboutTitle.${resumen.marca}`)}</h2>
+                <p class="text-lg leading-relaxed text-black/75">{t(`news.aboutBody.${resumen.marca}`)}</p>
+                <a href={localizePath(resumen.marca === "batucada" ? "/projects/batucada-popular/" : "/about", locale)} class:list={["group mt-auto inline-flex items-center gap-1.5 self-start", ENLACE]}>
+                    {t(`news.aboutLink.${resumen.marca}`)}
+                    <Icon name="mdi:arrow-right" class="h-4 w-4 spring group-hover:translate-x-1" aria-hidden="true" />
+                </a>
+            </section>
+        </div>
 
         {
             relacionadas.length > 0 && (
-                <section class="mt-20" aria-labelledby="actividad-mas">
+                <section class="mt-16" aria-labelledby="actividad-mas">
                     <div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
                         <h2 id="actividad-mas" class="font-display text-3xl font-black leading-tight text-black sm:text-4xl">{t("news.moreActivities")}</h2>
                         <a href={novedades} class:list={["group inline-flex items-center gap-1.5 text-sm", ENLACE]}>

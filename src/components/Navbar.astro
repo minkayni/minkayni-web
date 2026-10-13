@@ -34,6 +34,7 @@ const homeHref = localizePath("/", locale);
 ---
 
 <div class="fixed w-full h-[90px] z-50" id="nav-container" data-nav-theming={enableTheming}>
+    <div class="nav-fade" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
     <div class="mx-10 h-full overflow-hidden">
         <div class="h-full w-full">
             <div id="nav-switcher" class="max-lg:-translate-y-[100px]">
@@ -155,26 +156,95 @@ const homeHref = localizePath("/", locale);
         transition: background-color 350ms ease, transform 300ms ease;
     }
 
-    /* ── Velo al desplazarse ───────────────────────────────────────────────
+    /* ── Desvanecimiento al desplazarse ────────────────────────────────────
        El navbar no tiene fondo: sobre texto, el logo y la hamburguesa se
        mezclaban con las líneas que pasaban por debajo. Con la página ya
-       desplazada y tinta negra (contenido claro debajo), un degradado crema
-       que se desvanece hacia abajo los separa del texto sin dibujar una
-       barra. Sobre fondos oscuros no hace falta: la tinta crema ya contrasta.
+       desplazada, lo que sube hacia el borde se va desenfocando y
+       aclarando poco a poco, sin barra ni corte, como en iOS:
+
+       1. Desenfoque progresivo: cinco capas de `backdrop-filter` que doblan
+          su radio (0,5 → 8 px), cada una enmascarada a su franja. Una sola
+          capa con máscara deja ver dónde empieza el desenfoque; escalonadas,
+          el paso de nítido a borroso se reparte por toda la altura.
+       2. Velo crema (solo con tinta negra, sobre contenido claro) con
+          curva suavizada en lugar de lineal: un degradado lineal hace
+          visible la línea donde termina; con la curva (la de los «scrim»
+          de Material/Andreas Larsen) su final no se nota.
+
+       Va por debajo del contenido del navbar (z-index -1) y llega 40 px
+       más abajo que la barra para que el final quede bien difuminado.
        `data-scrolled` y `data-menu-open` los escribe el script de abajo. */
-    #nav-container::before {
-        content: "";
+    .nav-fade {
         position: absolute;
-        inset: 0 0 -24px;
+        inset: 0 0 -40px;
         z-index: -1;
         pointer-events: none;
-        background: linear-gradient(to bottom, color-mix(in srgb, var(--bg-white) 94%, transparent) 0%, color-mix(in srgb, var(--bg-white) 85%, transparent) 55%, transparent 100%);
         opacity: 0;
-        transition: opacity 250ms ease;
+        visibility: hidden;
+        transition: opacity 300ms ease, visibility 0s linear 300ms;
     }
 
-    #nav-container[data-nav-theme="light"][data-scrolled]:not([data-menu-open])::before {
+    #nav-container[data-scrolled]:not([data-menu-open]) .nav-fade {
         opacity: 1;
+        visibility: visible;
+        transition: opacity 300ms ease;
+    }
+
+    .nav-fade > i,
+    .nav-fade::before {
+        position: absolute;
+        inset: 0;
+    }
+
+    .nav-fade > i {
+        --mask: linear-gradient(to top, transparent var(--a), #000 var(--b), #000 var(--c), transparent var(--d));
+        -webkit-backdrop-filter: blur(var(--blur));
+        backdrop-filter: blur(var(--blur));
+        -webkit-mask-image: var(--mask);
+        mask-image: var(--mask);
+    }
+
+    .nav-fade > i:nth-child(1) { --blur: 0.5px; --a: 0%; --b: 12.5%; --c: 25%; --d: 37.5%; }
+    .nav-fade > i:nth-child(2) { --blur: 1px; --a: 12.5%; --b: 25%; --c: 37.5%; --d: 50%; }
+    .nav-fade > i:nth-child(3) { --blur: 2px; --a: 25%; --b: 37.5%; --c: 50%; --d: 62.5%; }
+    .nav-fade > i:nth-child(4) { --blur: 4px; --a: 37.5%; --b: 50%; --c: 62.5%; --d: 75%; }
+    .nav-fade > i:nth-child(5) { --blur: 8px; --a: 50%; --b: 62.5%; --c: 100%; --d: 100%; }
+
+    .nav-fade::before {
+        content: "";
+        --veil: var(--bg-white);
+        background: linear-gradient(
+            to bottom,
+            color-mix(in srgb, var(--veil) 92%, transparent) 0%,
+            color-mix(in srgb, var(--veil) 68%, transparent) 19%,
+            color-mix(in srgb, var(--veil) 50%, transparent) 34%,
+            color-mix(in srgb, var(--veil) 35%, transparent) 47%,
+            color-mix(in srgb, var(--veil) 26%, transparent) 56.5%,
+            color-mix(in srgb, var(--veil) 17%, transparent) 65%,
+            color-mix(in srgb, var(--veil) 11%, transparent) 73%,
+            color-mix(in srgb, var(--veil) 6%, transparent) 80.2%,
+            color-mix(in srgb, var(--veil) 3.5%, transparent) 86.1%,
+            color-mix(in srgb, var(--veil) 1.8%, transparent) 91%,
+            color-mix(in srgb, var(--veil) 0.7%, transparent) 95.2%,
+            transparent 100%
+        );
+        opacity: 0;
+        transition: opacity 300ms ease;
+    }
+
+    /* Sobre fondos oscuros la tinta crema ya contrasta: solo desenfoque. */
+    #nav-container[data-nav-theme="light"] .nav-fade::before {
+        opacity: 1;
+    }
+
+    /* Quien pide menos transparencias recibe un velo opaco y sin desenfoque. */
+    @media (prefers-reduced-transparency: reduce) {
+        .nav-fade > i {
+            display: none;
+        }
+        .nav-fade::before {
+            background: linear-gradient(to bottom, var(--bg-white) 70%, transparent 100%);
+        }
     }
 
     @media (prefers-reduced-motion: reduce) {
