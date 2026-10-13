@@ -17,6 +17,7 @@ import ActividadRedes from "./ActividadRedes.astro";
 import { renderMarkdown } from "../../utils/render-markdown";
 import { blockLabels } from "../../utils/block-labels";
 import { cmsPhotos } from "../../utils/sector-photos";
+import { viewerStrings } from "../../utils/viewer-strings";
 import { strapiMediaUrl } from "../../utils/media-url";
 import { enlaceMapa, esImagen, imagenDe, type ActividadResumen } from "../../utils/actividades-core";
 import { localizePath, useTranslations, type Locale } from "../../i18n";
@@ -51,6 +52,9 @@ const galeriaCompleta = (actividad.gallery ?? []).filter(esImagen);
 const galeria = galeriaCompleta.filter((foto) => !yaVistas.has(foto?.url));
 const fotos = cmsPhotos(galeria, STRAPI_URL, resumen.titulo, 40);
 const conGaleria = fotos.length > 1;
+/* Sin galería al final (el cuerpo ya las usa todas), «9 fotos» abre el visor
+   con todas, en vez de quedarse en un dato muerto. */
+const todasLasFotos = conGaleria ? [] : cmsPhotos(galeriaCompleta, STRAPI_URL, resumen.titulo, 40);
 const soloRestantes = galeria.length < galeriaCompleta.length;
 const videos = [actividad.video, ...(actividad.gallery ?? [])]
     .filter((m, i, lista) => m?.url && m.mime?.startsWith("video/") && lista.findIndex((x) => x?.url === m.url) === i)
@@ -124,7 +128,7 @@ const jsonLd = {
     },
 };
 
-const DT = "text-xs font-bold uppercase tracking-[0.18em] text-black/50";
+const DT = "text-sm font-bold text-black/50";
 const ENLACE = "font-bold text-primary underline underline-offset-4 hover:text-secondary-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 ---
 
@@ -132,15 +136,34 @@ const ENLACE = "font-bold text-primary underline underline-offset-4 hover:text-s
     <!-- El pie de página empieza con una cúpula (DomeSeparator) que invade
          150 px por encima (300 desde md): el padding inferior le deja sitio
          para que no tape el llamado a aportar. -->
-    <article class="mx-auto w-[90%] max-w-[1100px] pb-[calc(6rem+150px)] pt-10 md:pb-[calc(8rem+300px)]">
-        <nav class="text-sm" aria-label={t("news.backToNews")}>
+    <article class:list={["mx-auto w-[90%] max-w-[1100px] pb-[calc(6rem+150px)] md:pb-[calc(8rem+300px)]", !portada && "pt-10"]}>
+        {
+            /* La portada abre la crónica: sube sobre el borde del degradado
+               del hero para que la primera foto ya se vea sin desplazarse. Lo
+               justo para no rozar un título de tres líneas. */
+            portada && (
+                <img
+                    class="relative z-10 -mt-10 max-h-[78svh] w-full rounded-[2rem] bg-black/5 object-cover shadow-lg sm:rounded-[2.75rem] md:-mt-20"
+                    src={portada.src}
+                    srcset={portada.srcset || undefined}
+                    sizes="(min-width: 1100px) 1100px, 90vw"
+                    width={portada.ancho}
+                    height={portada.alto}
+                    alt={portada.alt}
+                    fetchpriority="high"
+                    decoding="async"
+                />
+            )
+        }
+
+        <nav class:list={["text-sm", portada && "mt-8"]} aria-label={t("news.backToNews")}>
             <a href={novedades} class="group inline-flex items-center gap-1.5 font-bold text-primary underline-offset-4 hover:underline">
                 <Icon name="mdi:arrow-left" class="h-4 w-4 spring group-hover:-translate-x-1" aria-hidden="true" />
                 {t("news.backToNews")}
             </a>
         </nav>
 
-        <header class="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_19rem] lg:gap-12">
+        <header class="mt-8">
             <div class="max-w-[70ch]">
                 <p class="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-[0.18em]">
                     <span class:list={["rounded-full px-3 py-1", resumen.marca === "batucada" ? "bg-accent/25 text-black" : "bg-primary/10 text-primary"]}>{marca}</span>
@@ -158,8 +181,10 @@ const ENLACE = "font-bold text-primary underline underline-offset-4 hover:text-s
                 }
             </div>
 
-            <aside class="self-start rounded-3xl bg-white/70 p-6 shadow-sm ring-1 ring-black/5 sm:p-7" aria-label={t("news.factsLabel")}>
-                <dl class="grid gap-5 text-base text-black/80 sm:grid-cols-2 lg:grid-cols-1">
+            {/* La ficha va en franja bajo el resumen: de lado dejaba un hueco
+                bajo el texto y empujaba el cuerpo hacia abajo. */}
+            <aside class="mt-10 rounded-3xl bg-white/70 p-6 shadow-sm ring-1 ring-black/5 sm:p-7" aria-label={t("news.factsLabel")}>
+                <dl class="grid gap-5 text-base text-black/80 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
                     <div>
                         <dt class={DT}>{t("news.factDate")}</dt>
                         <dd class="mt-1 flex items-start gap-2">
@@ -194,7 +219,7 @@ const ENLACE = "font-bold text-primary underline underline-offset-4 hover:text-s
                     </div>
                     {
                         gruposAliados.map((grupo) => (
-                            <div class="sm:col-span-2 lg:col-span-1">
+                            <div class="sm:col-span-2">
                                 <dt class={DT}>{grupo.titulo}</dt>
                                 <dd class="mt-2">
                                     <ul class="flex list-none flex-wrap items-center gap-x-5 gap-y-3 p-0">
@@ -237,37 +262,31 @@ const ENLACE = "font-bold text-primary underline underline-offset-4 hover:text-s
                                             {t("news.photoCount", { count: galeriaCompleta.length })}
                                         </a>
                                     ) : (
-                                        <span>{t("news.photoCount", { count: galeriaCompleta.length })}</span>
+                                        <span>
+                                            <span data-gallery-fallback>{t("news.photoCount", { count: galeriaCompleta.length })}</span>
+                                            <button
+                                                type="button"
+                                                hidden
+                                                class:list={["cursor-pointer border-0 bg-transparent p-0 text-left", ENLACE]}
+                                                data-gallery={JSON.stringify(todasLasFotos)}
+                                                data-gallery-strings={JSON.stringify(viewerStrings(t))}
+                                                data-gallery-caption={resumen.titulo}
+                                            >
+                                                {t("news.photoCount", { count: galeriaCompleta.length })}
+                                            </button>
+                                        </span>
                                     )}
                                 </dd>
                             </div>
                         )
                     }
                 </dl>
-                <div class="mt-6 border-t border-black/10 pt-5">
+                <div class="mt-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t border-black/10 pt-5">
                     <p class={DT}>{t("news.share")}</p>
-                    <div class="mt-3">
-                        <ActividadCompartir {url} titulo={resumen.titulo} {locale} compacto />
-                    </div>
+                    <ActividadCompartir {url} titulo={resumen.titulo} {locale} compacto />
                 </div>
             </aside>
         </header>
-
-        {
-            portada && (
-                <img
-                    class="mt-10 max-h-[80svh] w-full rounded-[2rem] bg-black/5 object-cover shadow-lg sm:rounded-[2.75rem]"
-                    src={portada.src}
-                    srcset={portada.srcset || undefined}
-                    sizes="(min-width: 1100px) 1100px, 90vw"
-                    width={portada.ancho}
-                    height={portada.alto}
-                    alt={portada.alt}
-                    fetchpriority="high"
-                    decoding="async"
-                />
-            )
-        }
 
         {
             blocks.length > 0 && (
@@ -277,9 +296,14 @@ const ENLACE = "font-bold text-primary underline underline-offset-4 hover:text-s
             )
         }
 
-        <section class="mt-14 flex flex-col gap-4 rounded-3xl bg-primary/[0.06] px-6 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-8" aria-labelledby="actividad-compartir">
-            <h2 id="actividad-compartir" class="font-display text-xl font-black text-black sm:text-2xl">{t("news.shareTitle")}</h2>
-            <ActividadCompartir {url} titulo={resumen.titulo} {locale} />
+        {/* Compartir y los posts en redes, en un solo bloque: antes eran dos
+            tarjetas seguidas, una de ellas con un único botón. */}
+        <section class="mt-14 rounded-3xl bg-primary/[0.06] px-6 py-6 sm:px-8" aria-labelledby="actividad-compartir">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <h2 id="actividad-compartir" class="font-display text-xl font-black text-black sm:text-2xl">{t("news.shareTitle")}</h2>
+                <ActividadCompartir {url} titulo={resumen.titulo} {locale} />
+            </div>
+            <ActividadRedes {actividad} {locale} />
         </section>
 
         {
@@ -297,10 +321,8 @@ const ENLACE = "font-bold text-primary underline underline-offset-4 hover:text-s
 
         {conGaleria && <ActividadGaleria {fotos} titulo={resumen.titulo} {locale} restantes={soloRestantes} />}
 
-        <ActividadRedes {actividad} {locale} />
-
         <section class="mt-16 grid gap-6 rounded-3xl border border-black/10 bg-white/50 px-8 py-10 sm:px-12 md:grid-cols-[1fr_auto] md:items-end" aria-labelledby="actividad-sobre">
-            <div class="max-w-[62ch]">
+            <div class="max-w-[36rem]">
                 <h2 id="actividad-sobre" class="font-display text-2xl font-black leading-tight text-black sm:text-3xl">{t(`news.aboutTitle.${resumen.marca}`)}</h2>
                 <p class="mt-4 text-lg leading-relaxed text-black/75">{t(`news.aboutBody.${resumen.marca}`)}</p>
             </div>
@@ -340,7 +362,7 @@ const ENLACE = "font-bold text-primary underline underline-offset-4 hover:text-s
                                 href={localizePath(`/novedades/${vecina.slug}/`, locale)}
                                 class:list={["group flex flex-col gap-1 rounded-2xl p-5 ring-1 ring-black/5 spring hover:-translate-y-0.5 hover:bg-white/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary", clase]}
                             >
-                                <span class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.18em] text-black/50">
+                                <span class="inline-flex items-center gap-1.5 text-sm font-bold text-black/50">
                                     {icono === "mdi:arrow-left" && <Icon name={icono} class="h-4 w-4" aria-hidden="true" />}
                                     {etiqueta}
                                     {icono === "mdi:arrow-right" && <Icon name={icono} class="h-4 w-4" aria-hidden="true" />}

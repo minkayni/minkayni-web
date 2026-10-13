@@ -4,7 +4,12 @@
 
    Sin JavaScript cada miniatura es un enlace a la versión grande (1600 px),
    nunca al original de varios megas. Con cinco fotos o más, la primera abre
-   el mosaico a doble tamaño. */
+   el mosaico a doble tamaño.
+
+   Las miniaturas cuadradas se recortan desde arriba: las fotos subidas antes
+   de las versiones limpias traen el sello de marca en la esquina inferior, y
+   un recorte centrado lo dejaba partido por la mitad. Las caras también
+   suelen quedar arriba. */
 import type { ViewerPhoto } from "@/utils/sector-photos";
 import type { ViewerStrings } from "@/scripts/batucada/viewer";
 
@@ -39,7 +44,7 @@ export default function GalleryGrid({ photos, caption, strings, openLabel }: Pro
                             aria-label={fill(openLabel, index + 1, photos.length)}
                         >
                             <img
-                                className="aspect-square w-full object-cover spring group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+                                className="aspect-square w-full object-cover object-top spring group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
                                 src={big ? photo.full : photo.thumb}
                                 srcSet={big ? photo.srcset || undefined : undefined}
                                 sizes={big ? "(min-width: 1024px) 550px, (min-width: 640px) 60vw, 90vw" : undefined}

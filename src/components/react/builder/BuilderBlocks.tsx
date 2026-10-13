@@ -48,9 +48,11 @@ const sectionTitle = (variant: BlocksVariant, page: string) => (variant === "art
 const island = (variant: BlocksVariant, tone: IslandTone, padding: IslandPadding, extra: string) => islandClass(tone, padding, extra, variant === "article" ? "full" : "page");
 
 /* Markdown del CMS. Sin plugin de tipografía, el reset de Tailwind deja los
-   párrafos pegados y las listas sin viñetas: el ritmo se pone aquí. */
+   párrafos pegados y las listas sin viñetas: el ritmo se pone aquí. El ancho
+   va en rem y no en `ch`: con Aristotelica el «0» es estrecho y 70ch daban
+   más de 110 caracteres por línea; 36rem son unos 72 a este cuerpo. */
 const RICH =
-    "max-w-[70ch] text-lg leading-relaxed text-black/75 [&>*+*]:mt-5 [&_a]:font-bold [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-4 [&_a:hover]:text-secondary-deep [&_strong]:text-black [&_h2]:mt-12 [&_h2]:font-display [&_h2]:text-3xl [&_h2]:font-black [&_h2]:leading-tight [&_h2]:text-black [&_h3]:mt-10 [&_h3]:font-display [&_h3]:text-2xl [&_h3]:font-bold [&_h3]:text-black [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:mt-2 [&_li]:pl-1 marker:text-primary [&_blockquote]:border-l-4 [&_blockquote]:border-accent [&_blockquote]:pl-5 [&_blockquote]:italic [&_hr]:my-10 [&_hr]:border-black/10";
+    "max-w-[36rem] text-lg leading-relaxed text-black/75 [&>*+*]:mt-5 [&_a]:font-bold [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-4 [&_a:hover]:text-secondary-deep [&_strong]:text-black [&_h2]:mt-12 [&_h2]:font-display [&_h2]:text-3xl [&_h2]:font-black [&_h2]:leading-tight [&_h2]:text-black [&_h3]:mt-10 [&_h3]:font-display [&_h3]:text-2xl [&_h3]:font-bold [&_h3]:text-black [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:mt-2 [&_li]:pl-1 marker:text-primary [&_blockquote]:border-l-4 [&_blockquote]:border-accent [&_blockquote]:pl-5 [&_blockquote]:italic [&_hr]:my-10 [&_hr]:border-black/10";
 const CAPTION = "mt-3 max-w-[60ch] text-sm leading-snug text-black/60";
 
 const isExternal = (href?: string | null) => Boolean(href && /^https?:\/\//.test(href));
@@ -183,15 +185,59 @@ function MediaGroup({ items, strapiUrl }: { items: MediaBlock[]; strapiUrl: stri
     );
 }
 
-/* Fotos seguidas del cuerpo de una actividad, juntas en un grupo. */
-const groupMedia = (blocks: Block[]): Array<Block | MediaBlock[]> =>
-    blocks.reduce<Array<Block | MediaBlock[]>>((items, block) => {
-        const last = items[items.length - 1];
-        if (block.type !== "media" || !block.image?.url) items.push(block);
+/* Una foto vertical sola seguida de texto: van lado a lado, como un bloque
+   «foto y texto». Sola, a la medida de la columna de lectura, dejaba vacía
+   la otra mitad de la página justo en la foto que suele cerrar la crónica. */
+function PhotoBeside({ media, bodyHtml, right, strapiUrl }: { media: MediaBlock; bodyHtml: string; right: boolean; strapiUrl: string }) {
+    const { image, caption } = media;
+    return (
+        <section className="w-full py-8">
+            <div className="grid items-center gap-8 md:grid-cols-2 md:gap-12 lg:gap-16">
+                <figure className={`m-0 ${right ? "md:order-2" : ""}`} data-reveal>
+                    <div className="overflow-hidden rounded-[2.25rem] shadow-lg">
+                        <CmsPicture
+                            media={image}
+                            alt={image?.alternativeText ?? caption ?? ""}
+                            widths={[480, 720, 1080]}
+                            sizes="(min-width: 768px) 45vw, 90vw"
+                            className="h-auto w-full object-cover"
+                            strapiUrl={strapiUrl}
+                        />
+                    </div>
+                    {caption && <figcaption className={CAPTION}>{caption}</figcaption>}
+                </figure>
+                <div className={RICH} data-reveal dangerouslySetInnerHTML={{ __html: bodyHtml }} />
+            </div>
+        </section>
+    );
+}
+
+type RichTextBlock = Extract<Block, { type: "richText" }>;
+type ArticleItem = Block | MediaBlock[] | { beside: MediaBlock; text: RichTextBlock; right: boolean };
+
+/* Fotos seguidas del cuerpo de una actividad, juntas en un grupo; y una
+   vertical suelta con el texto que la sigue, emparejadas (PhotoBeside), con
+   la foto del lado contrario a la del bloque «foto y texto» anterior para
+   que no se repitan dos composiciones iguales seguidas. */
+const groupMedia = (blocks: Block[]): ArticleItem[] => {
+    const items = blocks.reduce<Array<Block | MediaBlock[]>>((list, block) => {
+        const last = list[list.length - 1];
+        if (block.type !== "media" || !block.image?.url) list.push(block);
         else if (Array.isArray(last)) last.push(block);
-        else items.push([block]);
-        return items;
+        else list.push([block]);
+        return list;
     }, []);
+    return items.reduce<ArticleItem[]>((list, item, index) => {
+        const next = items[index + 1];
+        const previous = list[list.length - 1];
+        if (previous && "beside" in previous && previous.text === item) return list;
+        if (Array.isArray(item) && item.length === 1 && isPortrait(item[0].image) && next && !Array.isArray(next) && next.type === "richText" && next.bodyHtml) {
+            const before = previous && !Array.isArray(previous) && !("beside" in previous) && previous.type === "mediaText" ? previous : undefined;
+            list.push({ beside: item[0], text: next, right: Boolean(before && before.imagePosition !== "right") });
+        } else list.push(item);
+        return list;
+    }, []);
+};
 
 function BlockView({ block, strapiUrl, variant, labels }: { block: Block; strapiUrl: string; variant: BlocksVariant; labels: BlockLabels }) {
     switch (block.type) {
@@ -203,7 +249,7 @@ function BlockView({ block, strapiUrl, variant, labels }: { block: Block; strapi
                     <section className="pt-12 pb-1 sm:pt-16" data-reveal>
                         {h.eyebrow && <p className={`${EYEBROW} text-primary`}>{h.eyebrow}</p>}
                         {h.title && <Title title={h.title} className="max-w-[26ch] font-display text-3xl font-black leading-[1.02] tracking-tight text-black sm:text-5xl" accent="text-secondary-deep" />}
-                        {h.body && <p className="mt-5 max-w-[62ch] text-lg leading-relaxed text-black/70">{h.body}</p>}
+                        {h.body && <p className="mt-5 max-w-[36rem] text-lg leading-relaxed text-black/70">{h.body}</p>}
                     </section>
                 );
             return (
@@ -571,11 +617,17 @@ function BlockView({ block, strapiUrl, variant, labels }: { block: Block; strapi
 }
 
 export default function BuilderBlocks({ blocks, strapiUrl, variant = "page", labels }: Props) {
-    const items = variant === "article" ? groupMedia(blocks) : blocks;
+    const items: ArticleItem[] = variant === "article" ? groupMedia(blocks) : blocks;
     return (
         <>
             {items.map((item, index) =>
-                Array.isArray(item) ? <MediaGroup key={index} items={item} strapiUrl={strapiUrl} /> : <BlockView key={index} block={item} strapiUrl={strapiUrl} variant={variant} labels={labels} />
+                Array.isArray(item) ? (
+                    <MediaGroup key={index} items={item} strapiUrl={strapiUrl} />
+                ) : "beside" in item ? (
+                    <PhotoBeside key={index} media={item.beside} bodyHtml={item.text.bodyHtml ?? ""} right={item.right} strapiUrl={strapiUrl} />
+                ) : (
+                    <BlockView key={index} block={item} strapiUrl={strapiUrl} variant={variant} labels={labels} />
+                )
             )}
         </>
     );

@@ -155,6 +155,28 @@ const homeHref = localizePath("/", locale);
         transition: background-color 350ms ease, transform 300ms ease;
     }
 
+    /* ── Velo al desplazarse ───────────────────────────────────────────────
+       El navbar no tiene fondo: sobre texto, el logo y la hamburguesa se
+       mezclaban con las líneas que pasaban por debajo. Con la página ya
+       desplazada y tinta negra (contenido claro debajo), un degradado crema
+       que se desvanece hacia abajo los separa del texto sin dibujar una
+       barra. Sobre fondos oscuros no hace falta: la tinta crema ya contrasta.
+       `data-scrolled` y `data-menu-open` los escribe el script de abajo. */
+    #nav-container::before {
+        content: "";
+        position: absolute;
+        inset: 0 0 -24px;
+        z-index: -1;
+        pointer-events: none;
+        background: linear-gradient(to bottom, color-mix(in srgb, var(--bg-white) 94%, transparent) 0%, color-mix(in srgb, var(--bg-white) 85%, transparent) 55%, transparent 100%);
+        opacity: 0;
+        transition: opacity 250ms ease;
+    }
+
+    #nav-container[data-nav-theme="light"][data-scrolled]:not([data-menu-open])::before {
+        opacity: 1;
+    }
+
     @media (prefers-reduced-motion: reduce) {
         #nav-container :is(#navBase, #navScrolled),
         #nav-container :is(#navBase, #navScrolled) * {
@@ -307,6 +329,7 @@ const homeHref = localizePath("/", locale);
             lastRun = performance.now();
             const theme = resolveTheme();
             if (container.dataset.navTheme !== theme) container.dataset.navTheme = theme;
+            container.toggleAttribute("data-scrolled", window.scrollY > 24);
         };
 
         /* El muestreo fuerza recálculo de estilos: se limita a ~12 veces por
@@ -339,6 +362,7 @@ const homeHref = localizePath("/", locale);
            la animación de apertura; se lee su color directamente. */
         window.addEventListener("menu:state", (event) => {
             const open = Boolean((event as CustomEvent).detail?.open);
+            container.toggleAttribute("data-menu-open", open);
             if (!open) {
                 /* al cerrar, esperar a que el overlay desaparezca */
                 window.setTimeout(applyTheme, 260);
