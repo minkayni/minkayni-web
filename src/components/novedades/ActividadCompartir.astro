@@ -1,0 +1,101 @@
+---
+/* Botones para compartir una actividad. Son enlaces normales a las páginas
+   de compartir de cada red, así que funcionan sin JavaScript; «Copiar
+   enlace» y el menú del sistema (Web Share, en el teléfono) solo aparecen
+   cuando el navegador puede hacerlo. Puede ir más de una vez por página. */
+import { Icon } from "astro-icon/components";
+import { useTranslations, type Locale } from "../../i18n";
+
+interface Props {
+    url: string;
+    titulo: string;
+    locale: Locale;
+    /** `compacto`: solo iconos, para la ficha. */
+    compacto?: boolean;
+}
+
+const { url, titulo, locale, compacto = false } = Astro.props;
+const t = useTranslations(locale);
+const u = encodeURIComponent(url);
+
+const redes = [
+    { nombre: "WhatsApp", icon: "mdi:whatsapp", href: `https://wa.me/?text=${encodeURIComponent(`${titulo} ${url}`)}` },
+    { nombre: "Facebook", icon: "mdi:facebook", href: `https://www.facebook.com/sharer/sharer.php?u=${u}` },
+    { nombre: "LinkedIn", icon: "mdi:linkedin", href: `https://www.linkedin.com/sharing/share-offsite/?url=${u}` },
+];
+const boton =
+    "inline-flex h-11 items-center justify-center gap-2 rounded-full bg-white text-black ring-1 ring-black/10 spring press hover:-translate-y-0.5 hover:bg-primary hover:text-white hover:ring-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
+const forma = compacto ? "w-11" : "px-4 font-bold";
+---
+
+<ul class="flex list-none flex-wrap items-center gap-2 p-0" data-share={url} data-share-title={titulo}>
+    {
+        redes.map((red) => (
+            <li>
+                <a href={red.href} target="_blank" rel="noopener noreferrer" class:list={[boton, forma]} aria-label={t("news.shareOn", { network: red.nombre })}>
+                    <Icon name={red.icon} class="h-5 w-5" aria-hidden="true" />
+                    {!compacto && <span aria-hidden="true">{red.nombre}</span>}
+                </a>
+            </li>
+        ))
+    }
+    <li hidden data-share-copy-item>
+        <button type="button" class:list={[boton, forma]} aria-label={t("news.copyLink")} data-share-copy data-done={t("news.linkCopied")}>
+            <Icon name="mdi:link-variant" class="h-5 w-5" aria-hidden="true" />
+            {!compacto && <span data-share-copy-label aria-hidden="true">{t("news.copyLink")}</span>}
+        </button>
+    </li>
+    <li hidden data-share-native-item>
+        <button type="button" class:list={[boton, forma]} aria-label={t("news.share")} data-share-native>
+            <Icon name="mdi:share-variant" class="h-5 w-5" aria-hidden="true" />
+            {!compacto && <span aria-hidden="true">{t("news.share")}</span>}
+        </button>
+    </li>
+</ul>
+
+<script>
+    const initCompartir = () => {
+        document.querySelectorAll<HTMLElement>("[data-share]:not([data-share-ready])").forEach((lista) => {
+            lista.dataset.shareReady = "";
+            const url = lista.dataset.share ?? location.href;
+            const title = lista.dataset.shareTitle ?? document.title;
+
+            const copiar = lista.querySelector<HTMLButtonElement>("[data-share-copy]");
+            if (copiar && navigator.clipboard?.writeText) {
+                lista.querySelector<HTMLElement>("[data-share-copy-item]")!.hidden = false;
+                const etiqueta = copiar.querySelector<HTMLElement>("[data-share-copy-label]");
+                const original = copiar.getAttribute("aria-label") ?? "";
+                const textoOriginal = etiqueta?.textContent ?? "";
+                copiar.addEventListener("click", async () => {
+                    try {
+                        await navigator.clipboard.writeText(url);
+                    } catch {
+                        return;
+                    }
+                    const hecho = copiar.dataset.done ?? "";
+                    copiar.setAttribute("aria-label", hecho);
+                    if (etiqueta) etiqueta.textContent = hecho;
+                    /* El golpe de goma es adorno: se pide al usarlo. */
+                    void import("../../scripts/cartoon").then(({ squash }) => squash(copiar, { amount: 0.1, origin: "50% 50%" })).catch(() => {});
+                    window.setTimeout(() => {
+                        copiar.setAttribute("aria-label", original);
+                        if (etiqueta) etiqueta.textContent = textoOriginal;
+                    }, 2200);
+                });
+            }
+
+            const nativo = lista.querySelector<HTMLButtonElement>("[data-share-native]");
+            if (nativo && typeof navigator.share === "function" && navigator.canShare?.({ url, title }) !== false) {
+                lista.querySelector<HTMLElement>("[data-share-native-item]")!.hidden = false;
+                nativo.addEventListener("click", () => {
+                    navigator.share({ url, title }).catch(() => {
+                        /* Cancelado por quien comparte: nada que hacer. */
+                    });
+                });
+            }
+        });
+    };
+
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initCompartir, { once: true });
+    else initCompartir();
+</script>

@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { actividadPrincipal, aniosDe, enlaceMapa, esPublicable, formatearFechas, marcasDe, ordenarActividades, resumirActividad } from "../src/utils/actividades-core";
+import { actividadesRelacionadas, actividadPrincipal, aniosDe, enlaceMapa, esPublicable, formatearFechas, marcasDe, ordenarActividades, resumirActividad } from "../src/utils/actividades-core";
 import { alternatePaths, localizePath, stripLocale } from "../src/i18n";
 
 const base = { slug: "taller", title: "Taller", date: "2026-09-12", brand: "batucada" as const, summary: "Resumen", publishedAt: "2026-09-13T00:00:00Z" };
@@ -61,4 +61,36 @@ test("cada actividad tiene su gemela en el otro idioma", () => {
     /* Rutas parecidas que no son subpáginas no se tocan. */
     assert.equal(localizePath("/novedades", "en"), "/en/news");
     assert.equal(stripLocale("/en/newsletter"), "/newsletter");
+});
+
+test("más actividades: primero la misma marca, sin repetir la actual", () => {
+    const lista = [
+        { slug: "a", marca: "minkayni" as const },
+        { slug: "b", marca: "batucada" as const },
+        { slug: "c", marca: "minkayni" as const },
+        { slug: "d", marca: "batucada" as const },
+        { slug: "e", marca: "batucada" as const },
+    ];
+    assert.deepEqual(actividadesRelacionadas(lista, { slug: "b", marca: "batucada" }).map((a) => a.slug), ["d", "e", "a"]);
+    assert.deepEqual(actividadesRelacionadas(lista, { slug: "a", marca: "minkayni" }, 2).map((a) => a.slug), ["c", "b"]);
+    assert.deepEqual(actividadesRelacionadas([lista[0]], lista[0]), []);
+});
+
+test("el resumen cuenta solo las fotos de la galería", () => {
+    const gallery = [{ url: "/uploads/a.jpg", mime: "image/jpeg" }, { url: "/uploads/b.mp4", mime: "video/mp4" }, { url: "/uploads/c.png" }];
+    assert.equal(resumirActividad({ ...base, gallery }, "es", "https://strapi.example.org").fotos, 2);
+    assert.equal(resumirActividad(base, "es", "https://strapi.example.org").fotos, 0);
+});
+
+test("el resumen guarda las publicaciones de redes que cuentan la actividad", () => {
+    const r = resumirActividad(
+        {
+            ...base,
+            social_posts: [{ documentId: "abc", permalink: "https://www.instagram.com/p/X/" }, null],
+            social_links: [{ platform: "tiktok", url: "https://www.tiktok.com/@minkayni/video/1" }, { platform: "linkedin", url: null }],
+        },
+        "es",
+        "https://strapi.example.org"
+    );
+    assert.deepEqual(r.publicaciones, ["abc", "https://www.instagram.com/p/X/", "https://www.tiktok.com/@minkayni/video/1"]);
 });

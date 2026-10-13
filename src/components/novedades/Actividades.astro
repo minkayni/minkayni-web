@@ -31,12 +31,12 @@ const reglasAnio = anios
 
 {
     principal && (
-        <section class="act mt-14 sm:mt-20" aria-labelledby="actividades-titulo">
+        <section id="actividades" class="act mt-14 scroll-mt-28 sm:mt-20" aria-labelledby="actividades-titulo">
             <h2 id="actividades-titulo" class="font-display text-3xl font-black leading-tight text-black sm:text-4xl">
                 {t("news.activitiesTitle")}
             </h2>
             <p class="mt-3 max-w-[60ch] text-lg leading-relaxed text-black/70">
-                {t("news.activitiesLead")} <span class="text-black/50">({t("news.activityCount", { count: actividades.length })})</span>
+                {t("news.activitiesLead")} <span class="text-black/50">({actividades.length === 1 ? t("news.activityCountOne") : t("news.activityCount", { count: actividades.length })})</span>
             </p>
 
             <div class="act-principal mt-10">

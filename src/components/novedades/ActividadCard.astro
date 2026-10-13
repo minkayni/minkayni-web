@@ -1,6 +1,8 @@
 ---
 /* Tarjeta de una actividad de campo en /novedades. La grande (`destacada`)
-   abre la sección; las demás van en la grilla filtrable (Actividades.astro). */
+   abre la sección; las demás van en la grilla filtrable (Actividades.astro)
+   y en «Más actividades» al pie de cada actividad. */
+import { Icon } from "astro-icon/components";
 import type { ActividadResumen } from "../../utils/actividades-core";
 import { localizePath, useTranslations, type Locale } from "../../i18n";
 
@@ -21,7 +23,7 @@ const marca = actividad.marca === "batucada" ? t("news.brand.batucada") : t("new
 
 <article
     class:list={[
-        "group relative flex h-full flex-col overflow-hidden rounded-3xl bg-white/70 shadow-sm ring-1 ring-black/5 transition focus-within:ring-2 focus-within:ring-primary hover:-translate-y-0.5 hover:shadow-md motion-reduce:transition-none motion-reduce:hover:translate-y-0",
+        "group relative flex h-full flex-col overflow-hidden rounded-3xl bg-white/70 shadow-sm ring-1 ring-black/5 spring focus-within:ring-2 focus-within:ring-primary hover:-translate-y-1 hover:shadow-[0_24px_50px_rgba(35,15,55,0.12)] motion-reduce:hover:translate-y-0",
         destacada && "md:grid md:grid-cols-[1.25fr_1fr]",
     ]}
 >
@@ -30,17 +32,23 @@ const marca = actividad.marca === "batucada" ? t("news.brand.batucada") : t("new
             /* En la destacada la foto llena su columna sin estirar la tarjeta:
                una foto vertical no puede dictar la altura. */
             <div class:list={["relative aspect-[4/3] overflow-hidden bg-black/5", destacada && "md:aspect-auto md:min-h-[26rem]"]}>
-            <img
-                class="absolute inset-0 h-full w-full object-cover"
-                src={actividad.portada.src}
-                srcset={actividad.portada.srcset || undefined}
-                sizes={destacada ? "(min-width: 768px) 60vw, 90vw" : "(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 90vw"}
-                width={actividad.portada.ancho}
-                height={actividad.portada.alto}
-                alt=""
-                loading={destacada ? "eager" : "lazy"}
-                decoding="async"
-            />
+                <img
+                    class="absolute inset-0 h-full w-full object-cover spring group-hover:scale-[1.04] motion-reduce:group-hover:scale-100"
+                    src={actividad.portada.src}
+                    srcset={actividad.portada.srcset || undefined}
+                    sizes={destacada ? "(min-width: 768px) 60vw, 90vw" : "(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 90vw"}
+                    width={actividad.portada.ancho}
+                    height={actividad.portada.alto}
+                    alt=""
+                    loading={destacada ? "eager" : "lazy"}
+                    decoding="async"
+                />
+                {actividad.fotos > 1 && (
+                    <span class="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1 text-xs font-bold text-white backdrop-blur-sm">
+                        <Icon name="mdi:image-multiple-outline" class="h-4 w-4" aria-hidden="true" />
+                        {t("news.photoCount", { count: actividad.fotos })}
+                    </span>
+                )}
             </div>
         ) : (
             <div class:list={["aspect-[4/3] w-full", actividad.marca === "batucada" ? "bg-accent/30" : "bg-primary/15"]} aria-hidden="true" />
@@ -60,22 +68,36 @@ const marca = actividad.marca === "batucada" ? t("news.brand.batucada") : t("new
             ]}
         >
             {/* El enlace cubre toda la tarjeta (::after), sin anidar enlaces. */}
-            <a href={href} class="after:absolute after:inset-0 after:content-[''] hover:underline focus-visible:outline-none">
+            <a href={href} class="after:absolute after:inset-0 after:content-[''] group-hover:text-primary focus-visible:outline-none">
                 {actividad.titulo}
             </a>
         </Titulo>
 
-        <p class="mt-3 text-sm text-black/60">
+        <p class="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-black/60">
             <time datetime={actividad.fechaIso} class="font-bold text-black/75">{actividad.fechaTexto}</time>
-            {actividad.lugar && <span> · {actividad.lugar}</span>}
+            {actividad.lugar && (
+                <span class="inline-flex items-center gap-1">
+                    <Icon name="mdi:map-marker-outline" class="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                    {actividad.lugar}
+                </span>
+            )}
         </p>
 
         {actividad.resumen && <p class:list={["mt-4 leading-relaxed text-black/75", destacada ? "text-lg" : "line-clamp-3 text-base"]}>{actividad.resumen}</p>}
 
-        {destacada && (
-            <p class="mt-auto pt-6 font-bold text-primary" aria-hidden="true">
-                {t("news.readActivity")} →
-            </p>
+        {destacada && actividad.etiquetas.length > 0 && (
+            <ul class="mt-5 flex list-none flex-wrap gap-2 p-0" aria-label={t("news.tags")}>
+                {actividad.etiquetas.map((etiqueta) => (
+                    <li class="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">#{etiqueta}</li>
+                ))}
+            </ul>
         )}
+
+        <p class:list={["mt-auto pt-6 font-bold text-primary", !destacada && "text-sm"]} aria-hidden="true">
+            <span class="inline-flex items-center gap-1.5">
+                {t("news.readActivity")}
+                <Icon name="mdi:arrow-right" class="h-4 w-4 spring group-hover:translate-x-1" />
+            </span>
+        </p>
     </div>
 </article>

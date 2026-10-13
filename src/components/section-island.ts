@@ -3,7 +3,14 @@
    una función y no solo un componente para que la compartan SectionIsland.astro
    y los bloques React del constructor (BuilderBlocks.tsx). */
 
-const BASE = "mx-auto w-[94%] max-w-[1440px] rounded-[2.75rem] lg:rounded-[5rem]";
+const BASE = "rounded-[2.75rem] lg:rounded-[5rem]";
+
+const WIDTHS = {
+    /** A casi todo el ancho de la página. */
+    page: "mx-auto w-[94%] max-w-[1440px]",
+    /** Dentro de una columna que ya pone su ancho (el cuerpo de una actividad). */
+    full: "w-full",
+} as const;
 
 const TONES = {
     /** Piedra cálida, texto por defecto. */
@@ -30,5 +37,7 @@ export type IslandPadding = keyof typeof PADDINGS;
 
 const DEFAULT_PADDING: Record<IslandTone, IslandPadding> = { surface: "compact", brand: "wide", accent: "wide" };
 
-export const islandClass = (tone: IslandTone, padding: IslandPadding = DEFAULT_PADDING[tone], extra = ""): string =>
-    [BASE, TONES[tone], PADDINGS[padding], extra].filter(Boolean).join(" ");
+export type IslandWidth = keyof typeof WIDTHS;
+
+export const islandClass = (tone: IslandTone, padding: IslandPadding = DEFAULT_PADDING[tone], extra = "", width: IslandWidth = "page"): string =>
+    [WIDTHS[width], BASE, TONES[tone], PADDINGS[padding], extra].filter(Boolean).join(" ");

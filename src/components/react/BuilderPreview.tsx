@@ -21,10 +21,11 @@
 ─────────────────────────────────────────────────────────────────────────── */
 import { useEffect, useState } from "react";
 import BuilderBlocks from "./builder/BuilderBlocks";
-import { normalizeBlocks, type Block } from "./builder/normalize";
+import { normalizeBlocks, renderBlocksMarkdown, type Block } from "./builder/normalize";
 import { withFallback } from "@/utils/content";
 import { localizeLinks } from "@/utils/localize-links";
 import type { Locale } from "@/i18n";
+import type { BlockLabels } from "@/utils/block-labels";
 
 interface Labels {
     badge: string;
@@ -38,12 +39,14 @@ interface Props {
     strapiUrl: string;
     locale: Locale;
     labels: Labels;
+    /** Etiquetas del visor de fotos y del vídeo, ya traducidas. */
+    blockLabels: BlockLabels;
 }
 
 type Page = { title?: string | null; sections?: unknown };
 type State = { kind: "loading" } | { kind: "error"; message: string } | { kind: "ready"; title: string; blocks: Block[] };
 
-export default function BuilderPreview({ strapiUrl, locale, labels }: Props) {
+export default function BuilderPreview({ strapiUrl, locale, labels, blockLabels }: Props) {
     const [state, setState] = useState<State>({ kind: "loading" });
 
     useEffect(() => {
@@ -74,9 +77,7 @@ export default function BuilderPreview({ strapiUrl, locale, labels }: Props) {
                 const page = localizeLinks(merged, locale);
 
                 const { renderMarkdownInBrowser } = await import("@/utils/render-markdown-browser");
-                const blocks = normalizeBlocks(page.sections).map((block) =>
-                    block.type === "richText" && block.body ? { ...block, bodyHtml: renderMarkdownInBrowser(block.body) } : block
-                );
+                const blocks = await renderBlocksMarkdown(normalizeBlocks(page.sections), renderMarkdownInBrowser);
                 setState({ kind: "ready", title: page.title ?? "", blocks });
             } catch (error) {
                 if (!controller.signal.aborted) {
@@ -100,8 +101,10 @@ export default function BuilderPreview({ strapiUrl, locale, labels }: Props) {
             if (heroTitle) heroTitle.textContent = state.title;
         }
         let cancelled = false;
-        Promise.all([import("@/scripts/reveals"), import("@/scripts/magic-button"), import("@/scripts/main")]).then(([reveals, buttons, main]) => {
+        Promise.all([import("@/scripts/reveals"), import("@/scripts/magic-button"), import("@/scripts/main"), import("@/scripts/galeria"), import("@/scripts/video-embed")]).then(([reveals, buttons, main, galleries, videos]) => {
             if (cancelled) return;
+            galleries.initGalleries();
+            videos.initVideoEmbeds();
             reveals.initReveals();
             buttons.initMagicButtons();
             window.dispatchEvent(new Event("scrollfloat:scan"));
@@ -124,7 +127,7 @@ export default function BuilderPreview({ strapiUrl, locale, labels }: Props) {
                     {state.message}
                 </p>
             )}
-            {state.kind === "ready" && <BuilderBlocks blocks={state.blocks} strapiUrl={strapiUrl} />}
+            {state.kind === "ready" && <BuilderBlocks blocks={state.blocks} strapiUrl={strapiUrl} labels={blockLabels} />}
         </>
     );
 }
