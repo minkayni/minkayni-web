@@ -57,8 +57,10 @@ const RICH =
 const CAPTION = "mt-3 max-w-[60ch] text-sm leading-snug text-black/60";
 /* En una actividad, el texto corrido va en una columna centrada (la misma
    que la cabecera de ActividadView); fotos, galerías y «foto y texto» usan
-   todo el ancho. Alineado a la izquierda dejaba media página vacía. */
-const READING = "mx-auto w-full max-w-[36rem]";
+   todo el ancho. Alineado a la izquierda dejaba media página vacía. El
+   texto se queda en el cuerpo del resto del sitio (18 px) a cualquier
+   ancho: un párrafo es un párrafo en todas las páginas. */
+export const READING = "mx-auto w-full max-w-[36rem]";
 
 const isExternal = (href?: string | null) => Boolean(href && /^https?:\/\//.test(href));
 
