@@ -19,7 +19,7 @@ const { fotos, titulo, locale, restantes = false } = Astro.props;
 const t = useTranslations(locale);
 ---
 
-<section id="galeria" class="mt-20 scroll-mt-28" aria-labelledby="actividad-galeria">
+<section id="galeria" class="mt-16 scroll-mt-28" aria-labelledby="actividad-galeria">
     <div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <h2 id="actividad-galeria" class="font-display text-3xl font-black leading-tight text-black sm:text-4xl">
             {restantes ? t("news.morePhotos") : t("news.gallery")}

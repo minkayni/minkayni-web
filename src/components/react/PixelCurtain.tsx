@@ -166,6 +166,9 @@ const isInternalNavigation = (anchor: HTMLAnchorElement, event: MouseEvent): boo
   if (url.origin !== location.origin) return false;
   /* Misma página con distinto ancla: es un desplazamiento, no una navegación. */
   if (url.pathname === location.pathname && url.search === location.search && url.hash) return false;
+  /* Un archivo (/media/foto.jpg, un PDF) no es una página: no la llamaría
+     nadie para retirar la cortina, que se quedaría tapándolo. */
+  if (/\.(?!html?$)[a-z0-9]{2,5}$/i.test(url.pathname)) return false;
   return true;
 };
 
@@ -260,10 +263,13 @@ export default function PixelCurtain({
       rootRef.current?.replaceChildren();
     };
 
-    document.addEventListener('click', onClick, true);
+    /* En `window` y en burbuja, el último en enterarse: si un componente ya se
+       quedó con el clic (la galería abre su visor en vez de ir a la foto), lo
+       marcó con preventDefault y la cortina no se mete. */
+    window.addEventListener('click', onClick);
     window.addEventListener('pageshow', onPageShow);
     return () => {
-      document.removeEventListener('click', onClick, true);
+      window.removeEventListener('click', onClick);
       window.removeEventListener('pageshow', onPageShow);
     };
   }, []);

@@ -18,29 +18,37 @@ const loadViewer = () =>
     }));
 const preload = () => void loadViewer().catch(() => {});
 
-function initGallery(gallery: HTMLElement): void {
-    gallery.dataset.galleryReady = "";
+type Open = (index: number, trigger: HTMLElement, fallback?: string) => Promise<void>;
 
+/** Lee las fotos de `data-gallery` y devuelve con qué abrir el visor sobre ellas. */
+function opener(source: HTMLElement): Open | null {
     let photos: ViewerPhoto[];
     let strings: ViewerStrings;
     try {
-        photos = JSON.parse(gallery.dataset.gallery ?? "[]");
-        strings = JSON.parse(gallery.dataset.galleryStrings ?? "");
+        photos = JSON.parse(source.dataset.gallery ?? "[]");
+        strings = JSON.parse(source.dataset.galleryStrings ?? "");
     } catch {
-        return; /* Sin datos legibles quedan los enlaces a cada foto. */
+        return null;
     }
+    if (!photos.length) return null;
 
-    const open = async (index: number, trigger: HTMLElement, fallback?: string) => {
+    return async (index, trigger, fallback) => {
         trigger.setAttribute("aria-busy", "true");
         try {
             const { openViewer } = await loadViewer();
-            openViewer({ photos, index, caption: gallery.dataset.galleryCaption ?? "", strings, trigger });
+            openViewer({ photos, index, caption: source.dataset.galleryCaption ?? "", strings, trigger });
         } catch {
             if (fallback) window.location.assign(fallback);
         } finally {
             trigger.removeAttribute("aria-busy");
         }
     };
+}
+
+function initGallery(gallery: HTMLElement): void {
+    gallery.dataset.galleryReady = "";
+    const open = opener(gallery);
+    if (!open) return; /* Sin datos legibles quedan los enlaces a cada foto. */
 
     gallery.addEventListener("click", (event) => {
         const link = (event.target as HTMLElement).closest<HTMLAnchorElement>("[data-gallery-photo]");
@@ -50,21 +58,37 @@ function initGallery(gallery: HTMLElement): void {
         void open(Number(link.dataset.galleryPhoto), link, link.href);
     });
 
-    /* «Ver en pantalla completa», si la sección lo trae: sin JS no sirve, así
-       que sale oculto y se muestra aquí. */
+    /* «Ver en pantalla completa», si la sección lo trae. */
     const button = gallery.closest("section")?.querySelector<HTMLButtonElement>("[data-gallery-open]");
-    if (button) {
-        button.hidden = false;
-        button.addEventListener("click", () => void open(0, button));
-    }
+    if (button) arm(button, open);
 
     gallery.addEventListener("pointerover", preload, { once: true });
     gallery.addEventListener("focusin", preload, { once: true });
 }
 
+/* Un botón que abre el visor desde la primera foto. Sale `hidden` del
+   servidor (sin JavaScript no abriría nada) y aquí se muestra; si lo
+   acompaña un texto para ese caso (`data-gallery-fallback`), se oculta. */
+function arm(button: HTMLButtonElement, open: Open): void {
+    button.parentElement?.querySelector<HTMLElement>("[data-gallery-fallback]")?.setAttribute("hidden", "");
+    button.hidden = false;
+    button.addEventListener("click", () => void open(0, button));
+    button.addEventListener("pointerover", preload, { once: true });
+    button.addEventListener("focus", preload, { once: true });
+}
+
+/* Un botón que trae sus propias fotos (`data-gallery` en el botón, como el
+   «9 fotos» de la ficha de una actividad). */
+function initTrigger(button: HTMLButtonElement): void {
+    button.dataset.galleryReady = "";
+    const open = opener(button);
+    if (open) arm(button, open);
+}
+
 /** Arranca las galerías de la página que aún no lo estén. */
 export function initGalleries(): void {
-    const galleries = document.querySelectorAll<HTMLElement>("[data-gallery]:not([data-gallery-ready])");
+    document.querySelectorAll<HTMLButtonElement>("button[data-gallery]:not([data-gallery-ready])").forEach(initTrigger);
+    const galleries = document.querySelectorAll<HTMLElement>(":not(button)[data-gallery]:not([data-gallery-ready])");
     if (!galleries.length) return;
     galleries.forEach(initGallery);
     /* Se adelanta la descarga del visor en cuanto el navegador quede libre. */

@@ -1,6 +1,7 @@
 ---
 /* «También en redes»: los posts importados de Meta y los enlaces que guardó
-   el webhook de Postiz (también TikTok y LinkedIn), sin repetir. */
+   el webhook de Postiz (también TikTok y LinkedIn), sin repetir. Es una fila
+   del bloque «Comparte esta actividad», no una sección propia. */
 import { Icon } from "astro-icon/components";
 import type { Activity } from "../../schemas/pages.zod";
 import { useTranslations, type Locale } from "../../i18n";
@@ -32,11 +33,11 @@ const redes = candidatos
 
 {
     redes.length > 0 && (
-        <section class="mt-16 rounded-3xl border border-black/10 bg-white/50 px-8 py-8 sm:px-10" aria-labelledby="actividad-redes">
-            <h2 id="actividad-redes" class="text-sm font-bold uppercase tracking-[0.22em] text-primary">
+        <div class="flex flex-col gap-3 border-t border-black/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
+            <h3 id="actividad-redes" class="text-base font-bold text-black/70">
                 {t("news.alsoOnSocials")}
-            </h2>
-            <ul class="mt-4 flex list-none flex-wrap gap-3 p-0">
+            </h3>
+            <ul class="flex list-none flex-wrap gap-3 p-0" aria-labelledby="actividad-redes">
                 {redes.map((red) => (
                     <li>
                         <a href={red.url} target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 rounded-full bg-secondary px-5 py-2.5 font-bold text-white transition hover:bg-secondary-deep">
@@ -46,6 +47,6 @@ const redes = candidatos
                     </li>
                 ))}
             </ul>
-        </section>
+        </div>
     )
 }

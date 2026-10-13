@@ -19,6 +19,7 @@
    artículo y las fotos seguidas se agrupan en una fila en lugar de apilarse
    una debajo de otra a todo lo alto.
 ─────────────────────────────────────────────────────────────────────────── */
+import type { ReactNode } from "react";
 import { formatTitle } from "@/utils/rich-title";
 import { strapiMediaSrcSet, strapiMediaUrl } from "@/utils/media-url";
 import { cmsPhotos } from "@/utils/sector-photos";
@@ -48,10 +49,16 @@ const sectionTitle = (variant: BlocksVariant, page: string) => (variant === "art
 const island = (variant: BlocksVariant, tone: IslandTone, padding: IslandPadding, extra: string) => islandClass(tone, padding, extra, variant === "article" ? "full" : "page");
 
 /* Markdown del CMS. Sin plugin de tipografía, el reset de Tailwind deja los
-   párrafos pegados y las listas sin viñetas: el ritmo se pone aquí. */
+   párrafos pegados y las listas sin viñetas: el ritmo se pone aquí. El ancho
+   va en rem y no en `ch`: con Aristotelica el «0» es estrecho y 70ch daban
+   más de 110 caracteres por línea; 36rem son unos 72 a este cuerpo. */
 const RICH =
-    "max-w-[70ch] text-lg leading-relaxed text-black/75 [&>*+*]:mt-5 [&_a]:font-bold [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-4 [&_a:hover]:text-secondary-deep [&_strong]:text-black [&_h2]:mt-12 [&_h2]:font-display [&_h2]:text-3xl [&_h2]:font-black [&_h2]:leading-tight [&_h2]:text-black [&_h3]:mt-10 [&_h3]:font-display [&_h3]:text-2xl [&_h3]:font-bold [&_h3]:text-black [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:mt-2 [&_li]:pl-1 marker:text-primary [&_blockquote]:border-l-4 [&_blockquote]:border-accent [&_blockquote]:pl-5 [&_blockquote]:italic [&_hr]:my-10 [&_hr]:border-black/10";
+    "max-w-[36rem] text-lg leading-relaxed text-black/75 [&>*+*]:mt-5 [&_a]:font-bold [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-4 [&_a:hover]:text-secondary-deep [&_strong]:text-black [&_h2]:mt-12 [&_h2]:font-display [&_h2]:text-3xl [&_h2]:font-black [&_h2]:leading-tight [&_h2]:text-black [&_h3]:mt-10 [&_h3]:font-display [&_h3]:text-2xl [&_h3]:font-bold [&_h3]:text-black [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:mt-2 [&_li]:pl-1 marker:text-primary [&_blockquote]:border-l-4 [&_blockquote]:border-accent [&_blockquote]:pl-5 [&_blockquote]:italic [&_hr]:my-10 [&_hr]:border-black/10";
 const CAPTION = "mt-3 max-w-[60ch] text-sm leading-snug text-black/60";
+/* En una actividad, el texto corrido va en una columna centrada (la misma
+   que la cabecera de ActividadView); fotos, galerías y «foto y texto» usan
+   todo el ancho. Alineado a la izquierda dejaba media página vacía. */
+const READING = "mx-auto w-full max-w-[36rem]";
 
 const isExternal = (href?: string | null) => Boolean(href && /^https?:\/\//.test(href));
 
@@ -142,7 +149,7 @@ function MediaGroup({ items, strapiUrl }: { items: MediaBlock[]; strapiUrl: stri
         const [{ image, caption }] = items;
         const portrait = isPortrait(image);
         return (
-            <figure className={`py-6 ${portrait ? "max-w-[36rem]" : ""}`} data-reveal>
+            <figure className={`py-6 ${portrait ? READING : ""}`} data-reveal>
                 <div className="overflow-hidden rounded-[2rem] shadow-lg">
                     <CmsPicture
                         media={image}
@@ -183,15 +190,59 @@ function MediaGroup({ items, strapiUrl }: { items: MediaBlock[]; strapiUrl: stri
     );
 }
 
-/* Fotos seguidas del cuerpo de una actividad, juntas en un grupo. */
-const groupMedia = (blocks: Block[]): Array<Block | MediaBlock[]> =>
-    blocks.reduce<Array<Block | MediaBlock[]>>((items, block) => {
-        const last = items[items.length - 1];
-        if (block.type !== "media" || !block.image?.url) items.push(block);
+/* Foto a un lado y texto al otro. La usan el bloque «foto y texto» y una
+   foto vertical suelta seguida de texto en una actividad (groupMedia): sola,
+   a la medida de la columna de lectura, dejaba vacía la otra mitad de la
+   página justo en la foto que suele cerrar la crónica. */
+function SideBySide({ image, caption, right, className, strapiUrl, children }: { image: Media; caption?: string | null; right: boolean; className: string; strapiUrl: string; children: ReactNode }) {
+    return (
+        <section className={className}>
+            <div className="grid items-center gap-8 md:grid-cols-2 md:gap-12 lg:gap-16">
+                <figure className={`m-0 ${right ? "md:order-2" : ""}`} data-reveal>
+                    <div className="overflow-hidden rounded-[2.25rem] shadow-lg">
+                        <CmsPicture
+                            media={image}
+                            alt={image?.alternativeText ?? caption ?? ""}
+                            widths={[480, 720, 1080]}
+                            sizes="(min-width: 768px) 45vw, 90vw"
+                            className={`h-auto w-full object-cover ${isPortrait(image) ? "aspect-[4/5]" : "aspect-[4/3]"}`}
+                            strapiUrl={strapiUrl}
+                        />
+                    </div>
+                    {caption && <figcaption className={CAPTION}>{caption}</figcaption>}
+                </figure>
+                <div data-reveal>{children}</div>
+            </div>
+        </section>
+    );
+}
+
+type RichTextBlock = Extract<Block, { type: "richText" }>;
+type ArticleItem = Block | MediaBlock[] | { beside: MediaBlock; text: RichTextBlock; right: boolean };
+
+/* Fotos seguidas del cuerpo de una actividad, juntas en un grupo; y una
+   vertical suelta con el texto que la sigue, emparejadas (PhotoBeside), con
+   la foto del lado contrario a la del bloque «foto y texto» anterior para
+   que no se repitan dos composiciones iguales seguidas. */
+const groupMedia = (blocks: Block[]): ArticleItem[] => {
+    const items = blocks.reduce<Array<Block | MediaBlock[]>>((list, block) => {
+        const last = list[list.length - 1];
+        if (block.type !== "media" || !block.image?.url) list.push(block);
         else if (Array.isArray(last)) last.push(block);
-        else items.push([block]);
-        return items;
+        else list.push([block]);
+        return list;
     }, []);
+    return items.reduce<ArticleItem[]>((list, item, index) => {
+        const next = items[index + 1];
+        const previous = list[list.length - 1];
+        if (previous && "beside" in previous && previous.text === item) return list;
+        if (Array.isArray(item) && item.length === 1 && isPortrait(item[0].image) && next && !Array.isArray(next) && next.type === "richText" && next.bodyHtml) {
+            const before = previous && !Array.isArray(previous) && !("beside" in previous) && previous.type === "mediaText" ? previous : undefined;
+            list.push({ beside: item[0], text: next, right: Boolean(before && before.imagePosition !== "right") });
+        } else list.push(item);
+        return list;
+    }, []);
+};
 
 function BlockView({ block, strapiUrl, variant, labels }: { block: Block; strapiUrl: string; variant: BlocksVariant; labels: BlockLabels }) {
     switch (block.type) {
@@ -200,10 +251,10 @@ function BlockView({ block, strapiUrl, variant, labels }: { block: Block; strapi
             /* En una actividad el intro hace de título de sección. */
             if (variant === "article")
                 return (
-                    <section className="pt-12 pb-1 sm:pt-16" data-reveal>
+                    <section className={`${READING} pt-12 pb-1 sm:pt-16`} data-reveal>
                         {h.eyebrow && <p className={`${EYEBROW} text-primary`}>{h.eyebrow}</p>}
                         {h.title && <Title title={h.title} className="max-w-[26ch] font-display text-3xl font-black leading-[1.02] tracking-tight text-black sm:text-5xl" accent="text-secondary-deep" />}
-                        {h.body && <p className="mt-5 max-w-[62ch] text-lg leading-relaxed text-black/70">{h.body}</p>}
+                        {h.body && <p className="mt-5 max-w-[36rem] text-lg leading-relaxed text-black/70">{h.body}</p>}
                     </section>
                 );
             return (
@@ -218,7 +269,7 @@ function BlockView({ block, strapiUrl, variant, labels }: { block: Block; strapi
         case "richText":
             if (!block.bodyHtml) return null;
             return (
-                <section className={`${WRAP[variant]} ${variant === "article" ? "py-4" : "py-8"}`} data-reveal>
+                <section className={variant === "article" ? `${READING} py-4` : `${WRAP.page} py-8`} data-reveal>
                     <div className={RICH} dangerouslySetInnerHTML={{ __html: block.bodyHtml }} />
                 </section>
             );
@@ -239,7 +290,7 @@ function BlockView({ block, strapiUrl, variant, labels }: { block: Block; strapi
             if (!block.text) return null;
             if (variant === "article")
                 return (
-                    <figure className="my-8 max-w-[60ch] rounded-[2rem] bg-accent/20 px-7 py-8 sm:px-10" data-reveal>
+                    <figure className={`${READING} my-8 rounded-[2rem] bg-accent/20 px-7 py-8 sm:px-10`} data-reveal>
                         <span className="block font-display text-7xl leading-none text-primary/80" aria-hidden="true">
                             “
                         </span>
@@ -486,30 +537,12 @@ function BlockView({ block, strapiUrl, variant, labels }: { block: Block; strapi
         case "mediaText": {
             if (!block.image?.url || !block.bodyHtml) return null;
             const h = block.heading;
-            const portrait = isPortrait(block.image);
             return (
-                <section className={`${WRAP[variant]} ${variant === "article" ? "py-8" : "py-12"}`}>
-                    <div className="grid items-center gap-8 md:grid-cols-2 md:gap-12 lg:gap-16">
-                        <figure className={`m-0 ${block.imagePosition === "right" ? "md:order-2" : ""}`} data-reveal>
-                            <div className="overflow-hidden rounded-[2.25rem] shadow-lg">
-                                <CmsPicture
-                                    media={block.image}
-                                    alt={block.image.alternativeText ?? block.caption ?? ""}
-                                    widths={[480, 720, 1080]}
-                                    sizes="(min-width: 768px) 45vw, 90vw"
-                                    className={`h-auto w-full object-cover ${portrait ? "aspect-[4/5]" : "aspect-[4/3]"}`}
-                                    strapiUrl={strapiUrl}
-                                />
-                            </div>
-                            {block.caption && <figcaption className={CAPTION}>{block.caption}</figcaption>}
-                        </figure>
-                        <div data-reveal>
-                            {h?.eyebrow && <p className={`${EYEBROW} text-primary`}>{h.eyebrow}</p>}
-                            {h?.title && <Title title={h.title} className={`font-display font-black leading-[0.98] text-black ${variant === "article" ? "text-3xl sm:text-4xl" : "text-4xl sm:text-5xl"}`} accent="text-secondary-deep" />}
-                            <div className={`${RICH} ${h?.title ? "mt-6" : ""}`} dangerouslySetInnerHTML={{ __html: block.bodyHtml }} />
-                        </div>
-                    </div>
-                </section>
+                <SideBySide image={block.image} caption={block.caption} right={block.imagePosition === "right"} className={`${WRAP[variant]} ${variant === "article" ? "py-8" : "py-12"}`} strapiUrl={strapiUrl}>
+                    {h?.eyebrow && <p className={`${EYEBROW} text-primary`}>{h.eyebrow}</p>}
+                    {h?.title && <Title title={h.title} className={`font-display font-black leading-[0.98] text-black ${variant === "article" ? "text-3xl sm:text-4xl" : "text-4xl sm:text-5xl"}`} accent="text-secondary-deep" />}
+                    <div className={`${RICH} ${h?.title ? "mt-6" : ""}`} dangerouslySetInnerHTML={{ __html: block.bodyHtml }} />
+                </SideBySide>
             );
         }
 
@@ -571,11 +604,19 @@ function BlockView({ block, strapiUrl, variant, labels }: { block: Block; strapi
 }
 
 export default function BuilderBlocks({ blocks, strapiUrl, variant = "page", labels }: Props) {
-    const items = variant === "article" ? groupMedia(blocks) : blocks;
+    const items: ArticleItem[] = variant === "article" ? groupMedia(blocks) : blocks;
     return (
         <>
             {items.map((item, index) =>
-                Array.isArray(item) ? <MediaGroup key={index} items={item} strapiUrl={strapiUrl} /> : <BlockView key={index} block={item} strapiUrl={strapiUrl} variant={variant} labels={labels} />
+                Array.isArray(item) ? (
+                    <MediaGroup key={index} items={item} strapiUrl={strapiUrl} />
+                ) : "beside" in item ? (
+                    <SideBySide key={index} image={item.beside.image} caption={item.beside.caption} right={item.right} className="w-full py-8" strapiUrl={strapiUrl}>
+                        <div className={RICH} dangerouslySetInnerHTML={{ __html: item.text.bodyHtml ?? "" }} />
+                    </SideBySide>
+                ) : (
+                    <BlockView key={index} block={item} strapiUrl={strapiUrl} variant={variant} labels={labels} />
+                )
             )}
         </>
     );
