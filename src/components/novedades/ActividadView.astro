@@ -64,6 +64,28 @@ const vecinas = [
 const marca = resumen.marca === "batucada" ? t("news.brand.batucada") : t("news.brand.minkayni");
 const novedades = localizePath("/novedades/", locale);
 
+/* Aliados de la actividad: con su logo si el CMS lo tiene, si no con el nombre.
+   La propia marca no va aquí: ya firma la página. */
+const LOGO_ALTO = 40;
+const aliados = (actividad.partners ?? [])
+    .filter((p): p is NonNullable<typeof p> & { name: string } => Boolean(p?.name?.trim()))
+    .map((p) => ({
+        nombre: p.name.trim(),
+        rol: p.role === "financiador" ? "financiador" : "colaborador",
+        url: p.url?.startsWith("https://") ? p.url : undefined,
+        logo: p.logo?.url ? strapiMediaUrl(p.logo.url, STRAPI_URL, 320) : undefined,
+        ancho: p.logo?.width && p.logo?.height ? Math.round((p.logo.width * LOGO_ALTO) / p.logo.height) : undefined,
+    }));
+const gruposAliados = [
+    { titulo: t("news.factFunders"), lista: aliados.filter((a) => a.rol === "financiador") },
+    { titulo: t("news.factCollaborators"), lista: aliados.filter((a) => a.rol === "colaborador") },
+].filter((grupo) => grupo.lista.length > 0);
+/* Para el JSON-LD: `funder` y `contributor` de schema.org, o nada si no hay. */
+const organizaciones = (rol: string) => {
+    const lista = aliados.filter((a) => a.rol === rol).map((a) => ({ "@type": "Organization", name: a.nombre, ...(a.url ? { url: a.url } : {}) }));
+    return lista.length ? lista : undefined;
+};
+
 /* Google quiere descripciones de al menos 50 caracteres (tests/ad-grants):
    si la del CMS se queda corta se completa con la fecha, el lugar y la marca. */
 const descripcionBase = actividad.seo?.metaDescription?.trim() || resumen.resumen;
@@ -83,6 +105,8 @@ const jsonLd = {
     keywords: resumen.etiquetas.length ? resumen.etiquetas.join(", ") : undefined,
     author: { "@type": "Organization", name: "Fundación Minkayni" },
     publisher: { "@type": "Organization", name: "Fundación Minkayni" },
+    funder: organizaciones("financiador"),
+    contributor: organizaciones("colaborador"),
     about: {
         "@type": "Event",
         name: resumen.titulo,
@@ -168,6 +192,40 @@ const ENLACE = "font-bold text-primary underline underline-offset-4 hover:text-s
                             <span>{resumen.proyecto && resumen.proyecto !== marca ? `${resumen.proyecto} · ${marca}` : marca}</span>
                         </dd>
                     </div>
+                    {
+                        gruposAliados.map((grupo) => (
+                            <div class="sm:col-span-2 lg:col-span-1">
+                                <dt class={DT}>{grupo.titulo}</dt>
+                                <dd class="mt-2">
+                                    <ul class="flex list-none flex-wrap items-center gap-x-5 gap-y-3 p-0">
+                                        {grupo.lista.map((a) => (
+                                            <li>
+                                                {a.url ? (
+                                                    <a
+                                                        href={a.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        class="block rounded-md spring hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+                                                        aria-label={a.nombre}
+                                                    >
+                                                        {a.logo ? (
+                                                            <img src={a.logo} alt={a.nombre} height={LOGO_ALTO} width={a.ancho} class="h-10 w-auto max-w-[9rem] object-contain" loading="lazy" decoding="async" />
+                                                        ) : (
+                                                            <span class="font-bold text-black underline underline-offset-4">{a.nombre}</span>
+                                                        )}
+                                                    </a>
+                                                ) : a.logo ? (
+                                                    <img src={a.logo} alt={a.nombre} height={LOGO_ALTO} width={a.ancho} class="h-10 w-auto max-w-[9rem] object-contain" loading="lazy" decoding="async" />
+                                                ) : (
+                                                    <span class="font-bold text-black">{a.nombre}</span>
+                                                )}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </dd>
+                            </div>
+                        ))
+                    }
                     {
                         galeriaCompleta.length > 1 && (
                             <div>

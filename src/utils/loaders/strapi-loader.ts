@@ -22,8 +22,9 @@ type Opts = {
    * quedarse sin contenido. Hace falta porque la web y el CMS se despliegan
    * por separado y en cualquier orden: sin esto, añadir un campo al CMS y
    * pedirlo desde aquí vaciaba la colección si la web se construía primero.
+   * Con varias, se prueban en orden: de la que menos quita a la que más.
    */
-  fallbackSelection?: string;
+  fallbackSelection?: string | string[];
 };
 
 const NETWORK_TIMEOUT_MS = 30_000;
@@ -147,23 +148,25 @@ export function strapiLoader({
         return;
       }
 
-      /* La selección en uso: la completa, o la de reserva en cuanto el CMS
-         diga que no conoce algún campo. Se decide una vez por carga. */
+      /* La selección en uso: la completa, o la siguiente reserva cada vez
+         que el CMS diga que no conoce algún campo. Se decide una vez por carga. */
+      const reservas = fallbackSelection === undefined ? [] : Array.isArray(fallbackSelection) ? [...fallbackSelection] : [fallbackSelection];
       let activeSelection = selection;
       const consultar = async (
         build: (sel: string) => string,
         variables: Record<string, unknown>
-      ) => {
+      ): Promise<Awaited<ReturnType<typeof request>>> => {
         try {
           return await request(build(activeSelection), variables, cap(rootField));
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
           /* Campo que no existe («Cannot query field») o tipo de una unión
              que el CMS desplegado aún no tiene («Unknown type»). */
-          if (!fallbackSelection || activeSelection === fallbackSelection || !/Cannot query field|Unknown type/i.test(message)) throw error;
+          const siguiente = reservas.shift();
+          if (siguiente === undefined || !/Cannot query field|Unknown type/i.test(message)) throw error;
           logger.warn(`[${rootField}] El CMS aún no conoce algún campo pedido; se usa la selección de reserva.`);
-          activeSelection = fallbackSelection;
-          return request(build(activeSelection), variables, cap(rootField));
+          activeSelection = siguiente;
+          return consultar(build, variables);
         }
       };
 
