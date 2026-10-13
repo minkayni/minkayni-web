@@ -398,6 +398,10 @@ export const ActivitySchema = () =>
         social_posts: z.array(ActivitySocialPostSchema().nullable()).nullish(),
         /* Enlaces que guarda el webhook de Postiz (Instagram, Facebook, TikTok, LinkedIn). */
         social_links: z.array(z.object({ platform: z.string().nullish(), url: z.string().nullish() }).nullable()).nullish(),
+        /* Colaboradores y financiadores: su logo sale en la ficha de la actividad. */
+        partners: z
+            .array(z.object({ name: z.string().nullish(), role: z.enum(["colaborador", "financiador"]).nullish(), url: z.string().nullish(), logo: media() }).nullable())
+            .nullish(),
         tags: z.array(z.string()).nullish(),
         is_featured: z.boolean().nullish(),
         seo: SeoSchema().nullish(),

@@ -112,3 +112,33 @@ test("un bloque nuevo que el CMS aún no tiene también cae a la reserva", async
     globalThis.fetch = original;
   }
 });
+
+test("con varias reservas prueba en orden y se queda con la primera que el CMS acepta", async () => {
+  /* El CMS ya tiene los bloques nuevos pero aún no el campo `partners`: debe
+     quedarse con la reserva que solo quita `partners`, no con la más antigua. */
+  const consultas: string[] = [];
+  const original = globalThis.fetch;
+  globalThis.fetch = (async (_url: string, init: RequestInit) => {
+    const { query } = JSON.parse(String(init.body)) as { query: string };
+    consultas.push(query);
+    if (query.includes("partners")) return Response.json({ errors: [{ message: 'Cannot query field "partners" on type "Activity".' }] });
+    return Response.json({ data: { activities: [publicado] } });
+  }) as typeof fetch;
+
+  try {
+    const { ctx, guardados } = contexto();
+    const loader = strapiLoader({
+      mode: "collection",
+      rootField: "activities",
+      selection: "documentId publishedAt gallery partners { name }",
+      fallbackSelection: ["documentId publishedAt gallery", "documentId publishedAt"],
+      client: { endpoint: "https://cms.example.test/graphql" },
+    });
+    await loader.load(ctx as never);
+    assert.equal(guardados.size, 1);
+    assert.equal(consultas.length, 2);
+    assert.match(consultas[1], /gallery/);
+  } finally {
+    globalThis.fetch = original;
+  }
+});

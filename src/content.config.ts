@@ -390,8 +390,12 @@ const builderPageSelectionWith = (sections: string) => `
     seo { ${seoSelection} }
 `;
 
+/* Aliados de una actividad (colaboradores y financiadores, con su logo).
+   Va solo en la selección completa: un CMS sin el campo cae a la reserva. */
+const partnersSelection = `partners(pagination: { limit: 50 }) { id name role url logo { ${uploadFileSelection} } }`;
+
 /* Actividades de campo: mismos bloques que el constructor. */
-const activitySelectionWith = (sections: string) => `
+const activitySelectionWith = (sections: string, extra = "") => `
     ${entryMetaSelection}
     title
     slug
@@ -412,6 +416,7 @@ const activitySelectionWith = (sections: string) => `
     social_posts(pagination: { limit: 20 }) { documentId platform media_kind permalink }
     social_links
     seo { ${seoSelection} }
+    ${extra}
 `;
 
 const donationMethodSelection = `id name description href linkText fee icon`;
@@ -499,7 +504,7 @@ type StrapiCollection<S extends z.ZodType> = {
   schema: S;
   mode?: "single" | "collection";
   locale?: "es" | "en";
-  fallbackSelection?: string;
+  fallbackSelection?: string | string[];
 };
 
 const defineStrapiCollection = <S extends z.ZodType>({
@@ -646,8 +651,10 @@ const [builderPages, builderPagesEn] = defineBilingual({
 const [activities, activitiesEn] = defineBilingual({
   mode: "collection",
   rootField: "activities",
-  selection: activitySelectionWith(builderSectionsSelection),
-  fallbackSelection: activitySelectionWith(legacySectionsSelection),
+  selection: activitySelectionWith(builderSectionsSelection, partnersSelection),
+  /* Primero sin aliados (CMS sin el campo `partners`); luego, además, sin
+     los bloques nuevos. */
+  fallbackSelection: [activitySelectionWith(builderSectionsSelection), activitySelectionWith(legacySectionsSelection)],
   schema: ActivitySchema(),
 });
 
