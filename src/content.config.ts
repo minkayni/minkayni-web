@@ -346,9 +346,19 @@ const batucadaHistoryPageSelection = `
    Los campos heading/cards/items llevan ALIAS únicos por fragmento: GraphQL
    rechaza el mismo nombre con nulabilidad distinta entre tipos de la unión.
    normalize.ts (components/react/builder) los devuelve a heading/cards/items. */
-const builderSectionsSelection = `
+/* Bloques añadidos en octubre de 2026 (galería, vídeo, foto y texto,
+   preguntas). Con alias propios, como el resto: en una unión de GraphQL dos
+   fragmentos no pueden pedir el mismo campo con tipos distintos. */
+const newBlockFragments = `
+        ... on ComponentBlocksGallery { id galleryHeading: heading { ${headingSelection} } galleryImages: images(pagination: { limit: 100 }) { ${uploadFileSelection} } galleryCaption: caption }
+        ... on ComponentBlocksVideo { id videoUrl: url videoFile: file { ${uploadFileSelection} } videoCaption: caption }
+        ... on ComponentBlocksMediaText { id mediaTextHeading: heading { ${headingSelection} } mediaTextBody: body mediaTextImage: image { ${uploadFileSelection} } mediaTextCaption: caption imagePosition }
+        ... on ComponentBlocksFaq { id faqHeading: heading { ${headingSelection} } faqItems: items(pagination: { limit: 100 }) { id question answer } }
+`;
+
+const builderSectionsSelectionWith = (extra: string) => `
     sections {
-        __typename
+        __typename${extra}
         ... on ComponentBlocksIntro { id introHeading: heading { ${headingSelection} } }
         ... on ComponentBlocksRichText { id body }
         ... on ComponentBlocksMedia { id caption image { ${uploadFileSelection} } }
@@ -365,17 +375,23 @@ const builderSectionsSelection = `
     }
 `;
 
-const builderPageSelection = `
+/* Si la web se construye contra un CMS que aún no tiene los bloques nuevos,
+   GraphQL rechaza la consulta entera («Unknown type»); el loader repite
+   entonces con la selección de reserva, sin ellos (ver strapi-loader.ts). */
+const builderSectionsSelection = builderSectionsSelectionWith(newBlockFragments);
+const legacySectionsSelection = builderSectionsSelectionWith("");
+
+const builderPageSelectionWith = (sections: string) => `
     ${entryMetaSelection}
     title
     slug
     description
-    ${builderSectionsSelection}
+    ${sections}
     seo { ${seoSelection} }
 `;
 
 /* Actividades de campo: mismos bloques que el constructor. */
-const activitySelection = `
+const activitySelectionWith = (sections: string) => `
     ${entryMetaSelection}
     title
     slug
@@ -392,7 +408,7 @@ const activitySelection = `
     cover { ${uploadFileSelection} }
     gallery(pagination: { limit: 100 }) { ${uploadFileSelection} }
     video { ${uploadFileSelection} }
-    ${builderSectionsSelection}
+    ${sections}
     social_posts(pagination: { limit: 20 }) { documentId platform media_kind permalink }
     social_links
     seo { ${seoSelection} }
@@ -619,7 +635,8 @@ const [teamMembers, teamMembersEn] = defineBilingual({
 const [builderPages, builderPagesEn] = defineBilingual({
   mode: "collection",
   rootField: "pages",
-  selection: builderPageSelection,
+  selection: builderPageSelectionWith(builderSectionsSelection),
+  fallbackSelection: builderPageSelectionWith(legacySectionsSelection),
   schema: BuilderPageSchema(),
 });
 
@@ -629,7 +646,8 @@ const [builderPages, builderPagesEn] = defineBilingual({
 const [activities, activitiesEn] = defineBilingual({
   mode: "collection",
   rootField: "activities",
-  selection: activitySelection,
+  selection: activitySelectionWith(builderSectionsSelection),
+  fallbackSelection: activitySelectionWith(legacySectionsSelection),
   schema: ActivitySchema(),
 });
 

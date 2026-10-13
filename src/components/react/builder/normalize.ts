@@ -14,7 +14,7 @@
 ─────────────────────────────────────────────────────────────────────────── */
 
 export type Heading = { eyebrow?: string | null; title?: string | null; body?: string | null } | null;
-export type Media = { url?: string | null; alternativeText?: string | null; width?: number | null; height?: number | null } | null;
+export type Media = { url?: string | null; alternativeText?: string | null; caption?: string | null; width?: number | null; height?: number | null; mime?: string | null } | null;
 export type Stat = { value?: string | null; target?: number | null; prefix?: string | null; suffix?: string | null; label?: string | null; detail?: string | null };
 export type Card = { title?: string | null; description?: string | null };
 export type TimelineItem = { chip?: string | null; period?: string | null; title?: string | null; text?: string | null; image?: Media; imageAlt?: string | null };
@@ -38,7 +38,12 @@ export type Block =
     | { type: "pressList"; heading: Heading; items: PressItem[] }
     | { type: "linkCards"; heading: Heading; cards: LinkCard[] }
     | { type: "allies"; heading: Heading; items: Array<{ text?: string | null }> }
-    | { type: "cta"; heading: Heading; button: ActionButton; secondary: Link };
+    | { type: "cta"; heading: Heading; button: ActionButton; secondary: Link }
+    | { type: "gallery"; heading: Heading; images: Media[]; caption: string | null }
+    /** `url`: YouTube o Vimeo; `file`: vídeo subido. Basta con uno. */
+    | { type: "video"; url: string | null; file: Media; caption: string | null }
+    | { type: "mediaText"; heading: Heading; body: string | null; bodyHtml?: string; image: Media; caption: string | null; imagePosition: "left" | "right" }
+    | { type: "faq"; heading: Heading; items: Array<{ question: string; answer: string }> };
 
 export type BlockType = Block["type"];
 
@@ -55,6 +60,10 @@ const TYPE_BY_NAME: Record<string, BlockType> = {
     ComponentBlocksLinkCards: "linkCards",
     ComponentBlocksAllies: "allies",
     ComponentBlocksCta: "cta",
+    ComponentBlocksGallery: "gallery",
+    ComponentBlocksVideo: "video",
+    ComponentBlocksMediaText: "mediaText",
+    ComponentBlocksFaq: "faq",
     "blocks.intro": "intro",
     "blocks.rich-text": "richText",
     "blocks.media": "media",
@@ -67,6 +76,10 @@ const TYPE_BY_NAME: Record<string, BlockType> = {
     "blocks.link-cards": "linkCards",
     "blocks.allies": "allies",
     "blocks.cta": "cta",
+    "blocks.gallery": "gallery",
+    "blocks.video": "video",
+    "blocks.media-text": "mediaText",
+    "blocks.faq": "faq",
 };
 
 type Raw = Record<string, unknown>;
@@ -85,7 +98,7 @@ const heading = (v: unknown): Heading => {
 };
 const media = (v: unknown): Media => {
     const m = obj(v);
-    return m && str(m.url) ? { url: str(m.url), alternativeText: str(m.alternativeText), width: num(m.width), height: num(m.height) } : null;
+    return m && str(m.url) ? { url: str(m.url), alternativeText: str(m.alternativeText), caption: str(m.caption), width: num(m.width), height: num(m.height), mime: str(m.mime) } : null;
 };
 const link = (v: unknown): Link => {
     const l = obj(v);
@@ -99,7 +112,7 @@ export function normalizeBlock(raw: unknown): Block | null {
     const type = TYPE_BY_NAME[name];
     if (!type) return null;
 
-    const h = heading(pick(r, "heading", "introHeading", "statsHeading", "gridHeading", "timelineHeading", "awardsHeading", "pressHeading", "linksHeading", "alliesHeading", "ctaHeading"));
+    const h = heading(pick(r, "heading", "introHeading", "statsHeading", "gridHeading", "timelineHeading", "awardsHeading", "pressHeading", "linksHeading", "alliesHeading", "ctaHeading", "galleryHeading", "mediaTextHeading", "faqHeading"));
 
     switch (type) {
         case "intro":
@@ -145,9 +158,39 @@ export function normalizeBlock(raw: unknown): Block | null {
             const b = obj(r.button);
             return { type, heading: h, button: b ? { href: str(b.href), defaultText: str(b.defaultText), hoverText: str(b.hoverText) } : null, secondary: link(r.secondary) };
         }
+        case "gallery":
+            return { type, heading: h, images: list(pick(r, "images", "galleryImages")).map(media).filter(Boolean), caption: str(pick(r, "caption", "galleryCaption")) };
+        case "video":
+            return { type, url: str(pick(r, "url", "videoUrl")), file: media(pick(r, "file", "videoFile")), caption: str(pick(r, "caption", "videoCaption")) };
+        case "mediaText":
+            return {
+                type,
+                heading: h,
+                body: str(pick(r, "body", "mediaTextBody")),
+                image: media(pick(r, "image", "mediaTextImage")),
+                caption: str(pick(r, "caption", "mediaTextCaption")),
+                imagePosition: r.imagePosition === "right" ? "right" : "left",
+            };
+        case "faq":
+            return {
+                type,
+                heading: h,
+                items: list(pick(r, "items", "faqItems"))
+                    .map((i) => ({ question: str(i.question)?.trim() ?? "", answer: str(i.answer)?.trim() ?? "" }))
+                    .filter((i) => i.question && i.answer),
+            };
     }
 }
 
 export function normalizeBlocks(raw: unknown): Block[] {
     return (Array.isArray(raw) ? raw : []).map(normalizeBlock).filter((b): b is Block => b !== null);
+}
+
+/**
+ * Convierte a HTML el Markdown de los bloques que lo llevan (texto y foto
+ * con texto). Quien llama pone el conversor: en build, el pipeline del
+ * sitio; en la vista previa, el del navegador.
+ */
+export async function renderBlocksMarkdown(blocks: Block[], render: (markdown: string) => string | Promise<string>): Promise<Block[]> {
+    return Promise.all(blocks.map(async (block) => ((block.type === "richText" || block.type === "mediaText") && block.body ? { ...block, bodyHtml: await render(block.body) } : block)));
 }

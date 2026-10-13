@@ -4,13 +4,16 @@
    Lo comparten `/[...slug]` y `/en/[...slug]`. Los bloques los pinta
    BuilderBlocks (React) renderizado aquí a HTML estático, sin `client:*`:
    es el mismo componente que usa la vista previa del panel de Strapi
-   (BuilderPreview.tsx), así que las dos salidas coinciden. El Markdown del
-   bloque de texto se convierte aquí, en build, con el pipeline del sitio. */
+   (BuilderPreview.tsx), así que las dos salidas coinciden. El Markdown de
+   los bloques de texto y de foto con texto se convierte aquí, en build, con
+   el pipeline del sitio. */
 import PageLayout from "@/layouts/PageLayout.astro";
 import BuilderBlocks from "@/components/react/builder/BuilderBlocks";
-import { normalizeBlocks, type Block } from "@/components/react/builder/normalize";
+import { normalizeBlocks, renderBlocksMarkdown } from "@/components/react/builder/normalize";
 import { renderMarkdown } from "@/utils/render-markdown";
 import type { BuilderPage } from "@/schemas/pages.zod";
+import { getLocale, useTranslations } from "@/i18n";
+import { blockLabels } from "@/utils/block-labels";
 
 interface Props {
     page: BuilderPage;
@@ -19,9 +22,8 @@ interface Props {
 const { page } = Astro.props;
 const STRAPI_URL = (import.meta.env.STRAPI_URL ?? "").trim();
 
-const blocks: Block[] = await Promise.all(
-    normalizeBlocks(page.sections).map(async (block) => (block.type === "richText" && block.body ? { ...block, bodyHtml: await renderMarkdown(block.body) } : block))
-);
+const blocks = await renderBlocksMarkdown(normalizeBlocks(page.sections), renderMarkdown);
+const locale = getLocale(Astro.url);
 
 /* La subpágina trae su propio SEO; sin esto heredaba la descripción global. */
 const description = page.seo?.metaDescription ?? page.description ?? undefined;
@@ -29,7 +31,7 @@ const description = page.seo?.metaDescription ?? page.description ?? undefined;
 
 <PageLayout title={page.title ?? ""} description={description}>
     <div class="pb-32 md:pb-64">
-        <BuilderBlocks blocks={blocks} strapiUrl={STRAPI_URL} />
+        <BuilderBlocks blocks={blocks} strapiUrl={STRAPI_URL} labels={blockLabels(useTranslations(locale))} />
     </div>
 </PageLayout>
 
@@ -49,4 +51,15 @@ const description = page.seo?.metaDescription ?? page.description ?? undefined;
     } else {
         initBuilderPage();
     }
+</script>
+
+<script>
+    /* Aparte del script de arriba a propósito: ese importa GSAP (reveals,
+       botón mágico) y este no debe esperarlo. Una foto o un vídeo tocados
+       mientras GSAP aún llega no pueden acabar en el archivo suelto. */
+    import { initGalleries } from "../../scripts/galeria";
+    import { initVideoEmbeds } from "../../scripts/video-embed";
+
+    initGalleries();
+    initVideoEmbeds();
 </script>

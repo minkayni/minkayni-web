@@ -74,6 +74,13 @@ export const genericSectorPhotos = (alt: string): ViewerPhoto[] =>
  * @param max        Tope de fotos (el mapa usa 8; la galería de una actividad, más).
  */
 export function sectorPhotos(photos: readonly CmsPhoto[] | null | undefined, strapiBase: string, alt: string, max = MAX_SECTOR_PHOTOS): ViewerPhoto[] {
+    const resolved = cmsPhotos(photos, strapiBase, alt, max);
+    return resolved.length ? resolved : genericSectorPhotos(alt);
+}
+
+/** Las fotos del CMS listas para el visor, sin respaldo: puede quedar vacía
+ *  (galerías del constructor y de las actividades). */
+export function cmsPhotos(photos: readonly CmsPhoto[] | null | undefined, strapiBase: string, alt: string, max = MAX_SECTOR_PHOTOS): ViewerPhoto[] {
     const resolved: ViewerPhoto[] = [];
 
     for (const photo of photos ?? []) {
@@ -109,5 +116,5 @@ export function sectorPhotos(photos: readonly CmsPhoto[] | null | undefined, str
         });
     }
 
-    return resolved.length ? resolved : genericSectorPhotos(alt);
+    return resolved;
 }

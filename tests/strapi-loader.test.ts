@@ -81,3 +81,34 @@ test("un error que no es de esquema no se disfraza con la reserva", async () => 
     globalThis.fetch = original;
   }
 });
+
+test("un bloque nuevo que el CMS aún no tiene también cae a la reserva", async () => {
+  /* La web pide `... on ComponentBlocksGallery` antes de que el CMS se
+     despliegue con ese bloque: GraphQL rechaza la consulta entera con
+     «Unknown type». Sin reserva, /novedades perdía todas las actividades. */
+  const consultas: string[] = [];
+  const original = globalThis.fetch;
+  globalThis.fetch = (async (_url: string, init: RequestInit) => {
+    const { query } = JSON.parse(String(init.body)) as { query: string };
+    consultas.push(query);
+    if (query.includes("ComponentBlocksGallery"))
+      return Response.json({ errors: [{ message: 'Unknown type "ComponentBlocksGallery".' }] });
+    return Response.json({ data: { activities: [publicado] } });
+  }) as typeof fetch;
+
+  try {
+    const { ctx, guardados } = contexto();
+    const loader = strapiLoader({
+      mode: "collection",
+      rootField: "activities",
+      selection: "documentId publishedAt sections { __typename ... on ComponentBlocksGallery { id } }",
+      fallbackSelection: "documentId publishedAt sections { __typename }",
+      client: { endpoint: "https://cms.example.test/graphql" },
+    });
+    await loader.load(ctx as never);
+    assert.equal(guardados.size, 1);
+    assert.equal(consultas.length, 2);
+  } finally {
+    globalThis.fetch = original;
+  }
+});

@@ -6,6 +6,7 @@
 import PageLayout from "@/layouts/PageLayout.astro";
 import BuilderPreview from "@/components/react/BuilderPreview";
 import { getLocale, useTranslations } from "@/i18n";
+import { blockLabels } from "@/utils/block-labels";
 
 const locale = getLocale(Astro.url);
 const t = useTranslations(locale);
@@ -25,6 +26,7 @@ const STRAPI_URL = (import.meta.env.STRAPI_URL ?? "").trim();
                 errorNotFound: t("preview.errorNotFound"),
                 errorNetwork: t("preview.errorNetwork"),
             }}
+            blockLabels={blockLabels(t)}
         />
     </div>
 </PageLayout>

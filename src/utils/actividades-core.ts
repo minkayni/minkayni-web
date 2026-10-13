@@ -37,6 +37,12 @@ export interface ActividadResumen {
     portada?: ImagenActividad;
     destacada: boolean;
     etiquetas: string[];
+    /** Fotos de la galería; la tarjeta lo anuncia cuando hay varias. */
+    fotos: number;
+    /** Publicaciones de redes que cuentan esta actividad: `documentId` de los
+        posts importados y URL de los enlaces de Postiz. En /novedades, cada
+        publicación así enlaza a su actividad. */
+    publicaciones: string[];
 }
 
 const esFecha = (value: unknown): value is string => typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value);
@@ -89,6 +95,11 @@ export function resumirActividad(actividad: Activity & { slug: string; title: st
         portada: imagenDe(actividad.cover, strapiBase, actividad.title.trim(), [480, 960, 1440]),
         destacada: actividad.is_featured === true,
         etiquetas: (actividad.tags ?? []).filter((t): t is string => typeof t === "string" && t.trim().length > 0).slice(0, 6),
+        fotos: (actividad.gallery ?? []).filter(esImagen).length,
+        publicaciones: [
+            ...(actividad.social_posts ?? []).flatMap((p) => [p?.documentId, p?.permalink]),
+            ...(actividad.social_links ?? []).map((l) => l?.url),
+        ].filter((v): v is string => typeof v === "string" && v.length > 0),
     };
 }
 
@@ -99,6 +110,16 @@ export const ordenarActividades = <T extends Pick<ActividadResumen, "fechaIso" |
 /** La destacada más reciente o, si no hay, la más reciente. */
 export const actividadPrincipal = <T extends Pick<ActividadResumen, "destacada">>(ordenadas: T[]): T | undefined =>
     ordenadas.find((a) => a.destacada) ?? ordenadas[0];
+
+/**
+ * Otras actividades para «Más actividades» al pie de una actividad: primero
+ * las de la misma marca, y dentro de cada grupo se respeta el orden de la
+ * lista (de la más reciente a la más antigua).
+ */
+export const actividadesRelacionadas = <T extends Pick<ActividadResumen, "slug" | "marca">>(ordenadas: T[], actual: Pick<ActividadResumen, "slug" | "marca">, max = 3): T[] => {
+    const otras = ordenadas.filter((a) => a.slug !== actual.slug);
+    return [...otras.filter((a) => a.marca === actual.marca), ...otras.filter((a) => a.marca !== actual.marca)].slice(0, max);
+};
 
 /** Años con actividades, del más reciente al más antiguo. */
 export const aniosDe = (lista: Pick<ActividadResumen, "anio">[]): string[] => [...new Set(lista.map((a) => a.anio))].sort((a, b) => b.localeCompare(a));

@@ -8,7 +8,7 @@ export async function getStaticPaths() {
     return rutasDeActividades("es");
 }
 
-const { actividad, resumen, anterior, siguiente } = Astro.props;
+const { actividad, resumen, anterior, siguiente, relacionadas } = Astro.props;
 ---
 
-<ActividadView {actividad} {resumen} {anterior} {siguiente} locale="es" />
+<ActividadView {actividad} {resumen} {anterior} {siguiente} {relacionadas} locale="es" />

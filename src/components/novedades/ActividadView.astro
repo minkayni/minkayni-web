@@ -2,16 +2,21 @@
 /* Página de una actividad de campo: /novedades/<slug> y /en/news/<slug>.
 
    Los bloques del cuerpo son los del constructor (los mismos componentes que
-   las subpáginas y que la vista previa del panel), pintados a HTML estático.
-   Galería y redes viven en sus propios componentes. */
+   las subpáginas y que la vista previa del panel), pintados a HTML estático
+   en su variante de artículo: llenan la columna de lectura en vez de poner
+   su propio ancho. Galería, redes y botones de compartir viven en sus
+   propios componentes. */
 import PageLayout from "../../layouts/PageLayout.astro";
 import BuilderBlocks from "../react/builder/BuilderBlocks";
-import { normalizeBlocks, type Block } from "../react/builder/normalize";
+import { normalizeBlocks, renderBlocksMarkdown } from "../react/builder/normalize";
 import { Icon } from "astro-icon/components";
+import ActividadCard from "./ActividadCard.astro";
+import ActividadCompartir from "./ActividadCompartir.astro";
 import ActividadGaleria from "./ActividadGaleria.astro";
 import ActividadRedes from "./ActividadRedes.astro";
 import { renderMarkdown } from "../../utils/render-markdown";
-import { sectorPhotos } from "../../utils/sector-photos";
+import { blockLabels } from "../../utils/block-labels";
+import { cmsPhotos } from "../../utils/sector-photos";
 import { strapiMediaUrl } from "../../utils/media-url";
 import { enlaceMapa, esImagen, imagenDe, type ActividadResumen } from "../../utils/actividades-core";
 import { localizePath, useTranslations, type Locale } from "../../i18n";
@@ -28,27 +33,28 @@ interface Props {
     locale: Locale;
     anterior?: Vecina;
     siguiente?: Vecina;
+    /** Otras actividades para «Más actividades», ya elegidas. */
+    relacionadas?: ActividadResumen[];
 }
 
-const { actividad, resumen, locale, anterior, siguiente } = Astro.props;
+const { actividad, resumen, locale, anterior, siguiente, relacionadas = [] } = Astro.props;
 const t = useTranslations(locale);
 const STRAPI_URL = (import.meta.env.STRAPI_URL ?? "").trim();
 
-const blocks: Block[] = await Promise.all(
-    normalizeBlocks(actividad.sections).map(async (block) => (block.type === "richText" && block.body ? { ...block, bodyHtml: await renderMarkdown(block.body) } : block))
-);
+const blocks = await renderBlocksMarkdown(normalizeBlocks(actividad.sections), renderMarkdown);
 
 const portada = imagenDe(actividad.cover, STRAPI_URL, resumen.titulo, [640, 1080, 1600, 2200]);
 const galeria = (actividad.gallery ?? []).filter(esImagen);
-const fotos = sectorPhotos(galeria, STRAPI_URL, resumen.titulo, 40);
+const fotos = cmsPhotos(galeria, STRAPI_URL, resumen.titulo, 40);
+const conGaleria = fotos.length > 1;
 const videos = [actividad.video, ...(actividad.gallery ?? [])]
     .filter((m, i, lista) => m?.url && m.mime?.startsWith("video/") && lista.findIndex((x) => x?.url === m.url) === i)
     .map((m) => strapiMediaUrl(m?.url, STRAPI_URL))
     .filter(Boolean);
 const mapa = enlaceMapa(actividad.lat, actividad.lng);
 const vecinas = [
-    { vecina: anterior, etiqueta: `← ${t("news.previous")}`, clase: "" },
-    { vecina: siguiente, etiqueta: `${t("news.next")} →`, clase: "text-right" },
+    { vecina: anterior, etiqueta: t("news.previous"), icono: "mdi:arrow-left", clase: "" },
+    { vecina: siguiente, etiqueta: t("news.next"), icono: "mdi:arrow-right", clase: "sm:text-right sm:items-end" },
 ];
 const marca = resumen.marca === "batucada" ? t("news.brand.batucada") : t("news.brand.minkayni");
 const novedades = localizePath("/novedades/", locale);
@@ -58,7 +64,7 @@ const novedades = localizePath("/novedades/", locale);
 const descripcionBase = actividad.seo?.metaDescription?.trim() || resumen.resumen;
 const description =
     descripcionBase.length >= 50 ? descripcionBase : [descripcionBase, `${marca} · ${resumen.fechaTexto}${resumen.lugar ? ` · ${resumen.lugar}` : ""}`].filter(Boolean).join(" — ");
-const url = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : undefined;
+const url = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : Astro.url.href;
 const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -69,6 +75,7 @@ const jsonLd = {
     inLanguage: locale === "es" ? "es-EC" : "en",
     url,
     image: portada ? [portada.src] : undefined,
+    keywords: resumen.etiquetas.length ? resumen.etiquetas.join(", ") : undefined,
     author: { "@type": "Organization", name: "Fundación Minkayni" },
     publisher: { "@type": "Organization", name: "Fundación Minkayni" },
     about: {
@@ -87,6 +94,9 @@ const jsonLd = {
         organizer: { "@type": "Organization", name: marca },
     },
 };
+
+const DT = "text-xs font-bold uppercase tracking-[0.18em] text-black/50";
+const ENLACE = "font-bold text-primary underline underline-offset-4 hover:text-secondary-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 ---
 
 <PageLayout title={resumen.titulo} description={description} image={portada?.src} imageAlt={portada?.alt}>
@@ -95,42 +105,91 @@ const jsonLd = {
          para que no tape el llamado a aportar. -->
     <article class="mx-auto w-[90%] max-w-[1100px] pb-[calc(6rem+150px)] pt-10 md:pb-[calc(8rem+300px)]">
         <nav class="text-sm" aria-label={t("news.backToNews")}>
-            <a href={novedades} class="inline-flex items-center gap-1.5 font-bold text-primary underline underline-offset-4 hover:text-secondary-deep">
-                <Icon name="mdi:arrow-left" class="h-4 w-4" aria-hidden="true" />
+            <a href={novedades} class="group inline-flex items-center gap-1.5 font-bold text-primary underline-offset-4 hover:underline">
+                <Icon name="mdi:arrow-left" class="h-4 w-4 spring group-hover:-translate-x-1" aria-hidden="true" />
                 {t("news.backToNews")}
             </a>
         </nav>
 
-        <header class="mt-8 max-w-[70ch]">
-            <p class="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-[0.18em]">
-                <span class:list={["rounded-full px-3 py-1", resumen.marca === "batucada" ? "bg-accent/25 text-black" : "bg-primary/10 text-primary"]}>{marca}</span>
-                {resumen.proyecto && resumen.proyecto !== marca && <span class="text-black/60">{resumen.proyecto}</span>}
-            </p>
-            <p class="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 text-base text-black/70">
-                <time datetime={resumen.fechaIso} class="font-bold text-black/85">{resumen.fechaTexto}</time>
-                {resumen.lugar && (
-                    <>
-                        <span aria-hidden="true">·</span>
-                        <span>{resumen.lugar}</span>
-                    </>
-                )}
-                {mapa && (
-                    <>
-                        <span aria-hidden="true">·</span>
-                        <a href={mapa} target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 font-bold text-primary underline underline-offset-4 hover:text-secondary-deep">
-                            <Icon name="mdi:map-marker-outline" class="h-4 w-4" aria-hidden="true" />
-                            {t("news.seeOnMap")}
-                        </a>
-                    </>
-                )}
-            </p>
-            {resumen.resumen && <p class="mt-6 text-xl leading-relaxed text-black/80 sm:text-2xl">{resumen.resumen}</p>}
+        <header class="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_19rem] lg:gap-12">
+            <div class="max-w-[70ch]">
+                <p class="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-[0.18em]">
+                    <span class:list={["rounded-full px-3 py-1", resumen.marca === "batucada" ? "bg-accent/25 text-black" : "bg-primary/10 text-primary"]}>{marca}</span>
+                    {resumen.proyecto && resumen.proyecto !== marca && <span class="rounded-full bg-black/5 px-3 py-1 text-black/70">{resumen.proyecto}</span>}
+                </p>
+                {resumen.resumen && <p class="mt-6 text-xl leading-relaxed text-black/80 sm:text-2xl sm:leading-relaxed">{resumen.resumen}</p>}
+                {
+                    resumen.etiquetas.length > 0 && (
+                        <ul class="mt-6 flex list-none flex-wrap gap-2 p-0" aria-label={t("news.tags")}>
+                            {resumen.etiquetas.map((etiqueta) => (
+                                <li class="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">#{etiqueta}</li>
+                            ))}
+                        </ul>
+                    )
+                }
+            </div>
+
+            <aside class="self-start rounded-3xl bg-white/70 p-6 shadow-sm ring-1 ring-black/5 sm:p-7" aria-label={t("news.factsLabel")}>
+                <dl class="grid gap-5 text-base text-black/80 sm:grid-cols-2 lg:grid-cols-1">
+                    <div>
+                        <dt class={DT}>{t("news.factDate")}</dt>
+                        <dd class="mt-1 flex items-start gap-2">
+                            <Icon name="mdi:calendar-blank-outline" class="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+                            <time datetime={resumen.fechaIso} class="font-bold text-black">{resumen.fechaTexto}</time>
+                        </dd>
+                    </div>
+                    {
+                        resumen.lugar && (
+                            <div>
+                                <dt class={DT}>{t("news.factPlace")}</dt>
+                                <dd class="mt-1 flex items-start gap-2">
+                                    <Icon name="mdi:map-marker-outline" class="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+                                    <span>
+                                        {resumen.lugar}
+                                        {mapa && (
+                                            <a href={mapa} target="_blank" rel="noopener noreferrer" class:list={["mt-1 block text-sm", ENLACE]}>
+                                                {t("news.seeOnMap")} ↗
+                                            </a>
+                                        )}
+                                    </span>
+                                </dd>
+                            </div>
+                        )
+                    }
+                    <div>
+                        <dt class={DT}>{t("news.factProject")}</dt>
+                        <dd class="mt-1 flex items-start gap-2">
+                            <Icon name="mdi:hand-heart-outline" class="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+                            <span>{resumen.proyecto && resumen.proyecto !== marca ? `${resumen.proyecto} · ${marca}` : marca}</span>
+                        </dd>
+                    </div>
+                    {
+                        conGaleria && (
+                            <div>
+                                <dt class={DT}>{t("news.factPhotos")}</dt>
+                                <dd class="mt-1 flex items-start gap-2">
+                                    <Icon name="mdi:image-multiple-outline" class="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+                                    <a href="#galeria" class={ENLACE}>
+                                        {t("news.photoCount", { count: fotos.length })}
+                                    </a>
+                                </dd>
+                            </div>
+                        )
+                    }
+                </dl>
+                <div class="mt-6 border-t border-black/10 pt-5">
+                    <p class={DT}>{t("news.share")}</p>
+                    <div class="mt-3">
+                        <ActividadCompartir {url} titulo={resumen.titulo} {locale} compacto />
+                    </div>
+                </div>
+            </aside>
         </header>
 
         {
             portada && (
                 <img
-                    class="mt-10 max-h-[75vh] w-full rounded-3xl bg-black/5 object-cover shadow-sm"
+                    class="mt-10 max-h-[80svh] w-full rounded-[2rem] bg-black/5 object-cover shadow-lg sm:rounded-[2.75rem]"
                     src={portada.src}
                     srcset={portada.srcset || undefined}
                     sizes="(min-width: 1100px) 1100px, 90vw"
@@ -143,26 +202,33 @@ const jsonLd = {
             )
         }
 
-        {blocks.length > 0 && (
-            <div class="mt-6">
-                <BuilderBlocks blocks={blocks} strapiUrl={STRAPI_URL} />
-            </div>
-        )}
+        {
+            blocks.length > 0 && (
+                <div class="mt-4">
+                    <BuilderBlocks blocks={blocks} strapiUrl={STRAPI_URL} variant="article" labels={blockLabels(t)} />
+                </div>
+            )
+        }
+
+        <section class="mt-14 flex flex-col gap-4 rounded-3xl bg-primary/[0.06] px-6 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-8" aria-labelledby="actividad-compartir">
+            <h2 id="actividad-compartir" class="font-display text-xl font-black text-black sm:text-2xl">{t("news.shareTitle")}</h2>
+            <ActividadCompartir {url} titulo={resumen.titulo} {locale} />
+        </section>
 
         {
             videos.length > 0 && (
-                <section class="mt-16" aria-labelledby="actividad-video">
-                    <h2 id="actividad-video" class="font-display text-2xl font-black text-black sm:text-3xl">{t("news.video")}</h2>
-                    <div class="mt-6 grid gap-6 md:grid-cols-2">
+                <section class="mt-20" aria-labelledby="actividad-video">
+                    <h2 id="actividad-video" class="font-display text-3xl font-black leading-tight text-black sm:text-4xl">{t("news.video")}</h2>
+                    <div class:list={["mt-6 grid gap-6", videos.length > 1 && "md:grid-cols-2"]}>
                         {videos.map((src) => (
-                            <video class="w-full rounded-3xl bg-black" src={src} controls playsinline preload="metadata" />
+                            <video class="max-h-[80svh] w-full rounded-[2rem] bg-black" src={src} controls playsinline preload="metadata" />
                         ))}
                     </div>
                 </section>
             )
         }
 
-        {fotos.length > 1 && <ActividadGaleria {fotos} titulo={resumen.titulo} {locale} />}
+        {conGaleria && <ActividadGaleria {fotos} titulo={resumen.titulo} {locale} />}
 
         <ActividadRedes {actividad} {locale} />
 
@@ -171,26 +237,51 @@ const jsonLd = {
                 <h2 id="actividad-sobre" class="font-display text-2xl font-black leading-tight text-black sm:text-3xl">{t(`news.aboutTitle.${resumen.marca}`)}</h2>
                 <p class="mt-4 text-lg leading-relaxed text-black/75">{t(`news.aboutBody.${resumen.marca}`)}</p>
             </div>
-            <a
-                href={localizePath(resumen.marca === "batucada" ? "/projects/batucada-popular/" : "/about", locale)}
-                class="inline-flex items-center gap-1.5 font-bold text-primary underline underline-offset-4 hover:text-secondary-deep"
-            >
+            <a href={localizePath(resumen.marca === "batucada" ? "/projects/batucada-popular/" : "/about", locale)} class:list={["group inline-flex items-center gap-1.5", ENLACE]}>
                 {t(`news.aboutLink.${resumen.marca}`)}
-                <Icon name="mdi:arrow-right" class="h-4 w-4" aria-hidden="true" />
+                <Icon name="mdi:arrow-right" class="h-4 w-4 spring group-hover:translate-x-1" aria-hidden="true" />
             </a>
         </section>
 
         {
+            relacionadas.length > 0 && (
+                <section class="mt-20" aria-labelledby="actividad-mas">
+                    <div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+                        <h2 id="actividad-mas" class="font-display text-3xl font-black leading-tight text-black sm:text-4xl">{t("news.moreActivities")}</h2>
+                        <a href={novedades} class:list={["group inline-flex items-center gap-1.5 text-sm", ENLACE]}>
+                            {t("news.allActivities")}
+                            <Icon name="mdi:arrow-right" class="h-4 w-4 spring group-hover:translate-x-1" aria-hidden="true" />
+                        </a>
+                    </div>
+                    <ul class="mt-8 grid list-none gap-6 p-0 sm:grid-cols-2 lg:grid-cols-3">
+                        {relacionadas.map((otra) => (
+                            <li>
+                                <ActividadCard actividad={otra} {locale} />
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+            )
+        }
+
+        {
             (anterior || siguiente) && (
                 <nav class="mt-16 grid gap-4 border-t border-black/10 pt-10 sm:grid-cols-2" aria-label={t("news.backToNews")}>
-                    {vecinas.map(({ vecina, etiqueta, clase }) =>
+                    {vecinas.map(({ vecina, etiqueta, icono, clase }) =>
                         vecina ? (
-                            <a href={localizePath(`/novedades/${vecina.slug}/`, locale)} class:list={["group rounded-2xl p-4 transition hover:bg-white/60", clase]}>
-                                <span class="block text-xs font-bold uppercase tracking-[0.18em] text-black/50">{etiqueta}</span>
-                                <span class="mt-1 block font-display text-lg font-black text-black group-hover:text-primary">{vecina.titulo}</span>
+                            <a
+                                href={localizePath(`/novedades/${vecina.slug}/`, locale)}
+                                class:list={["group flex flex-col gap-1 rounded-2xl p-5 ring-1 ring-black/5 spring hover:-translate-y-0.5 hover:bg-white/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary", clase]}
+                            >
+                                <span class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.18em] text-black/50">
+                                    {icono === "mdi:arrow-left" && <Icon name={icono} class="h-4 w-4" aria-hidden="true" />}
+                                    {etiqueta}
+                                    {icono === "mdi:arrow-right" && <Icon name={icono} class="h-4 w-4" aria-hidden="true" />}
+                                </span>
+                                <span class="font-display text-lg font-black leading-snug text-black group-hover:text-primary">{vecina.titulo}</span>
                             </a>
                         ) : (
-                            <span />
+                            <span class="hidden sm:block" />
                         )
                     )}
                 </nav>
@@ -201,10 +292,16 @@ const jsonLd = {
             <h2 id="actividad-cta" class="font-display text-3xl font-black leading-tight sm:text-4xl">{t("news.ctaTitle")}</h2>
             <p class="mx-auto mt-4 max-w-[52ch] text-lg leading-relaxed text-white/85">{t("news.ctaBody")}</p>
             <div class="mt-8 flex flex-wrap justify-center gap-4">
-                <a class="inline-block rounded-full bg-white px-8 py-4 font-display text-lg font-black text-primary spring press hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:transition-none" href={localizePath("/donate", locale)}>
+                <a
+                    class="inline-block rounded-full bg-white px-8 py-4 font-display text-lg font-black text-primary spring press hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:transition-none"
+                    href={localizePath("/donate", locale)}
+                >
                     {t("news.ctaButton")}
                 </a>
-                <a class="inline-block rounded-full border-2 border-white/70 px-8 py-4 font-display text-lg font-black text-white transition hover:bg-white/10" href={localizePath("/about#contacto", locale)}>
+                <a
+                    class="inline-block rounded-full border-2 border-white/70 px-8 py-4 font-display text-lg font-black text-white spring press hover:-translate-y-0.5 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+                    href={localizePath("/about#contacto", locale)}
+                >
                     {t("news.followContact")}
                 </a>
             </div>
@@ -225,4 +322,15 @@ const jsonLd = {
 
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initActividad, { once: true });
     else initActividad();
+</script>
+
+<script>
+    /* Aparte del script de arriba a propósito: ese importa GSAP (reveals,
+       botón mágico) y este no debe esperarlo. Una foto o un vídeo tocados
+       mientras GSAP aún llega no pueden acabar en el archivo suelto. */
+    import { initGalleries } from "../../scripts/galeria";
+    import { initVideoEmbeds } from "../../scripts/video-embed";
+
+    initGalleries();
+    initVideoEmbeds();
 </script>

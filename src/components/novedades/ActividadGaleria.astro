@@ -1,6 +1,8 @@
 ---
-/* Galería de una actividad. Reutiliza el visor del mapa de Batucada; sin
-   JavaScript cada miniatura es un enlace a la foto. */
+/* Galería de una actividad: el mosaico compartido (GalleryGrid.tsx) con su
+   título y el botón de pantalla completa. Abre el visor del mapa de
+   Batucada; el porqué de cargarlo bajo demanda está en scripts/galeria.ts. */
+import GalleryGrid from "../react/builder/GalleryGrid";
 import type { ViewerPhoto } from "../../utils/sector-photos";
 import { viewerStrings } from "../../utils/viewer-strings";
 import { useTranslations, type Locale } from "../../i18n";
@@ -15,60 +17,20 @@ const { fotos, titulo, locale } = Astro.props;
 const t = useTranslations(locale);
 ---
 
-<section class="mt-16" aria-labelledby="actividad-galeria">
-    <h2 id="actividad-galeria" class="font-display text-2xl font-black text-black sm:text-3xl">{t("news.gallery")}</h2>
-    <ul
-        class="mt-6 grid list-none grid-cols-2 gap-3 p-0 sm:grid-cols-3 lg:grid-cols-4"
-        data-act-gallery={JSON.stringify(fotos)}
-        data-act-strings={JSON.stringify(viewerStrings(t))}
-        data-act-caption={titulo}
-    >
-        {
-            fotos.map((foto, indice) => (
-                <li>
-                    <a
-                        href={foto.zoom || foto.full}
-                        data-act-photo={indice}
-                        class="block overflow-hidden rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                        aria-label={t("viewer.open", { index: indice + 1, count: fotos.length })}
-                    >
-                        <img
-                            class="aspect-square w-full bg-black/5 object-cover spring hover:scale-[1.03] motion-reduce:transition-none motion-reduce:hover:scale-100"
-                            src={foto.thumb}
-                            width={foto.width ?? 600}
-                            height={foto.height ?? 600}
-                            alt={foto.alt}
-                            loading="lazy"
-                            decoding="async"
-                        />
-                    </a>
-                </li>
-            ))
-        }
-    </ul>
+<section id="galeria" class="mt-20 scroll-mt-28" aria-labelledby="actividad-galeria">
+    <div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+        <h2 id="actividad-galeria" class="font-display text-3xl font-black leading-tight text-black sm:text-4xl">
+            {t("news.gallery")}
+            <span class="ml-1 align-middle font-sans text-base font-bold text-black/45">{t("news.photoCount", { count: fotos.length })}</span>
+        </h2>
+        <button
+            type="button"
+            hidden
+            data-gallery-open
+            class="inline-flex items-center gap-2 rounded-full border-2 border-primary px-5 py-2 font-display font-bold text-primary spring press hover:-translate-y-0.5 hover:bg-primary hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        >
+            {t("news.openGallery")}
+        </button>
+    </div>
+    <GalleryGrid photos={fotos} caption={titulo} strings={viewerStrings(t)} openLabel={t("viewer.open")} />
 </section>
-
-<script>
-    import { openViewer } from "../../scripts/batucada/viewer";
-
-    const initGaleria = () => {
-        const galeria = document.querySelector<HTMLElement>("[data-act-gallery]");
-        if (!galeria || galeria.dataset.ready) return;
-        galeria.dataset.ready = "1";
-        try {
-            const photos = JSON.parse(galeria.dataset.actGallery ?? "[]");
-            const strings = JSON.parse(galeria.dataset.actStrings ?? "");
-            galeria.addEventListener("click", (event) => {
-                const enlace = (event.target as HTMLElement).closest<HTMLAnchorElement>("[data-act-photo]");
-                if (!enlace) return;
-                event.preventDefault();
-                openViewer({ photos, index: Number(enlace.dataset.actPhoto), caption: galeria.dataset.actCaption ?? "", strings, trigger: enlace });
-            });
-        } catch {
-            /* Sin datos legibles quedan los enlaces a cada foto. */
-        }
-    };
-
-    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initGaleria, { once: true });
-    else initGaleria();
-</script>

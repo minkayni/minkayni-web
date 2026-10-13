@@ -13,7 +13,7 @@ import { withFallback } from "./content";
 import { localizeLinks } from "./localize-links";
 import { defaultLocale, type Locale } from "../i18n";
 import type { Activity } from "../schemas/pages.zod";
-import { esPublicable, ordenarActividades, resumirActividad, type ActividadResumen } from "./actividades-core";
+import { actividadesRelacionadas, esPublicable, ordenarActividades, resumirActividad, type ActividadResumen } from "./actividades-core";
 
 const STRAPI_URL = (import.meta.env.STRAPI_URL ?? "").trim();
 
@@ -54,6 +54,7 @@ const vecina = (resumen?: ActividadResumen) => (resumen ? { slug: resumen.slug, 
 export async function rutasDeActividades(locale: Locale) {
     const completas = await cargarActividadesCompletas(locale);
     const resumenes = ordenarActividades(completas.map((a) => ({ ...resumirActividad(a, locale, STRAPI_URL), completa: a })));
+    const sinCompleta = resumenes.map(({ completa: _, ...resumen }) => resumen);
     return resumenes.map(({ completa, ...resumen }, indice) => ({
         params: { slug: resumen.slug },
         props: {
@@ -62,6 +63,7 @@ export async function rutasDeActividades(locale: Locale) {
             /* Para «Siguiente / anterior» al pie de la actividad. */
             anterior: vecina(resumenes[indice + 1]),
             siguiente: vecina(resumenes[indice - 1]),
+            relacionadas: actividadesRelacionadas(sinCompleta, resumen),
         },
     }));
 }

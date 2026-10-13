@@ -13,5 +13,9 @@
     "not_found_handling": "404-page",
     "run_worker_first": true
   },
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+  // Workers Builds despliega cada rama que no es master con `wrangler preview`,
+  // que exige este bloque aunque vaya vacío; sin él la vista previa de cada PR
+  // fallaba tras compilar bien. Lo demás (assets, compatibilidad) se hereda.
+  "previews": {}
 }

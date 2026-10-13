@@ -158,7 +158,9 @@ export function strapiLoader({
           return await request(build(activeSelection), variables, cap(rootField));
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
-          if (!fallbackSelection || activeSelection === fallbackSelection || !/Cannot query field/i.test(message)) throw error;
+          /* Campo que no existe («Cannot query field») o tipo de una unión
+             que el CMS desplegado aún no tiene («Unknown type»). */
+          if (!fallbackSelection || activeSelection === fallbackSelection || !/Cannot query field|Unknown type/i.test(message)) throw error;
           logger.warn(`[${rootField}] El CMS aún no conoce algún campo pedido; se usa la selección de reserva.`);
           activeSelection = fallbackSelection;
           return request(build(activeSelection), variables, cap(rootField));
